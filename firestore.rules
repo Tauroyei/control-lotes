@@ -1,24 +1,63 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Cualquiera con el enlace puede ver y cambiar lotes, pero solo con datos válidos.
-    match /lotes/{loteId} {
-      allow read, delete: if true;
-      allow create, update: if esLoteValido(request.resource.data);
+
+    function conSesion() {
+      return request.auth != null;
     }
+    // Un usuario es administrador si existe el documento admins/{su UID}.
+    // Esos documentos solo se crean desde la consola de Firebase.
+    function esAdmin() {
+      return conSesion() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /admins/{uid} {
+      allow read: if conSesion() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /plazas/{plazaId} {
+      allow read: if conSesion();
+      allow create, update: if esAdmin() && plazaValida(request.resource.data);
+      allow delete: if esAdmin();
+    }
+
+    match /lotes/{loteId} {
+      allow read: if conSesion();
+      // Todo lote nuevo entra sin despachar y sin pagar.
+      allow create: if conSesion() && loteValido(request.resource.data)
+        && request.resource.data.despachado == false && request.resource.data.fechaDespacho == null
+        && request.resource.data.pagado == false && request.resource.data.fechaPago == null;
+      // El administrador cambia cualquier dato; un operador solo marca o deshace el despacho de un lote sin pagar.
+      allow update: if loteValido(request.resource.data) && (
+        esAdmin() ||
+        (conSesion() && resource.data.pagado == false && request.resource.data.pagado == false
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['despachado', 'fechaDespacho']))
+      );
+      allow delete: if esAdmin();
+    }
+
     // Todo lo demás está cerrado.
     match /{document=**} {
       allow read, write: if false;
     }
   }
-  function esLoteValido(d) {
-    return d.keys().hasOnly(['plaza', 'codigo', 'cartones', 'fechaRegistro', 'despachado', 'fechaDespacho', 'pagado', 'fechaPago'])
+
+  function plazaValida(d) {
+    return d.keys().hasOnly(['nombre', 'creadaEn'])
+      && d.nombre is string && d.nombre.size() > 0 && d.nombre.size() <= 120
+      && (!('creadaEn' in d) || (d.creadaEn is string && d.creadaEn.size() <= 40));
+  }
+
+  function loteValido(d) {
+    return d.keys().hasOnly(['plaza', 'codigo', 'cartones', 'fechaRegistro', 'despachado', 'fechaDespacho', 'pagado', 'fechaPago', 'creadoPor'])
       && d.plaza is string && d.plaza.size() > 0 && d.plaza.size() <= 120
       && d.codigo is string && d.codigo.size() > 0 && d.codigo.size() <= 120
       && d.cartones is int && d.cartones > 0 && d.cartones <= 10000000
       && d.fechaRegistro is string && d.fechaRegistro.size() <= 40
       && d.despachado is bool && d.pagado is bool
       && (d.fechaDespacho == null || (d.fechaDespacho is string && d.fechaDespacho.size() <= 10))
-      && (d.fechaPago == null || (d.fechaPago is string && d.fechaPago.size() <= 10));
+      && (d.fechaPago == null || (d.fechaPago is string && d.fechaPago.size() <= 10))
+      && (!('creadoPor' in d) || (d.creadoPor is string && d.creadoPor.size() <= 120));
   }
 }

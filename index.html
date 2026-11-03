@@ -8,9 +8,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
-/* Layout: sticky header with three tabs (Agregar / Despachos / Pagos); a pipeline strip
-   Registrado → Despachado → Pagado under shared filters; each view is a single column of
-   lists with an action bar. Colors borrow process inks: yellow = sin despachar, cyan = despachado, green = pagado. */
+/* Layout: login screen, then a sticky header with tabs (Agregar / Despachos / Enviados / Pagos / Plazas);
+   shared filters and a pipeline strip Sin despachar → Despachado → Pagado above each view.
+   Colors borrow process inks: yellow = sin despachar, cyan = despachado, green = pagado. */
 :root {
   --paper: #f3f5f8;
   --surface: #ffffff;
@@ -48,19 +48,35 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
-body { background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
 .wrap { max-width: 860px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 button, input, select { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+/* ---------- login ---------- */
+.boot { min-height: 100vh; display: grid; place-items: center; color: var(--muted); }
+.login { min-height: 100vh; display: grid; place-items: center; padding-block: 32px; }
+.login-card { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; display: grid; gap: 16px; }
+.login-card .brand { padding: 0; }
+.login-card .btn { width: 100%; padding-block: 11px; }
+.login-help { font-size: .85rem; color: var(--muted); margin: 0; }
+
+/* ---------- header ---------- */
 .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
-.brand { display: flex; align-items: center; gap: 12px; padding-block: 14px 8px; }
+.brand-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 14px 8px; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .brand svg { flex: none; }
 .brand h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; letter-spacing: .01em; line-height: 1; text-wrap: balance; }
 .brand p { margin: 2px 0 0; color: var(--muted); font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; }
-.tabs { display: flex; gap: 4px; }
-.tab { flex: 1; border: 0; background: none; padding: 10px 6px 12px; font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; letter-spacing: .02em; color: var(--muted); border-bottom: 3px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.userbox { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; font-size: .85rem; }
+.userbox .who { font-weight: 600; overflow-wrap: anywhere; }
+.role { font-size: .7rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: var(--paper); color: var(--muted); }
+.role.admin { background: var(--accent); color: var(--accent-ink); }
+.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { flex: 1 0 auto; border: 0; background: none; padding: 10px 10px 12px; font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; letter-spacing: .02em; color: var(--muted); border-bottom: 3px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
 .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
 .tab .badge { font-family: var(--font-body); font-size: .72rem; font-weight: 600; min-width: 20px; padding: 1px 6px; border-radius: 999px; background: var(--paper); color: var(--muted); }
 .tab[aria-selected="true"] .badge { background: var(--accent); color: var(--accent-ink); }
@@ -68,10 +84,11 @@ button, input, select { font: inherit; color: inherit; }
 main { display: grid; gap: 18px; padding-block: 18px 48px; }
 .notice { padding: 12px 14px; border-radius: 8px; background: var(--danger-bg); color: var(--danger); }
 
-.filters { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.filters { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 10px; align-items: end; }
 .field { display: grid; gap: 4px; min-width: 0; }
 .field > span { font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .field input, .field select { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.btn-excel { padding: 10px 14px; white-space: nowrap; }
 
 .pipeline { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: stretch; gap: 6px; }
 .stage { border: 0; text-align: left; padding: 10px 12px; border-radius: 10px; cursor: pointer; display: grid; gap: 2px; min-width: 0; }
@@ -90,6 +107,7 @@ main { display: grid; gap: 18px; padding-block: 18px 48px; }
 .form-grid { display: grid; grid-template-columns: 1.3fr 1fr .8fr; gap: 10px; }
 .form-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .err { color: var(--danger); font-size: .88rem; }
+.link { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 600; cursor: pointer; }
 
 .btn { border: 1px solid var(--line); background: var(--surface); padding: 9px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
@@ -99,7 +117,7 @@ main { display: grid; gap: 18px; padding-block: 18px 48px; }
 
 .list { list-style: none; margin: 0; padding: 0; display: grid; }
 .row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 11px 2px; border-top: 1px solid var(--line); }
-.row:first-child { border-top: 0; }
+.list > li:first-child .row, .list > .row:first-child { border-top: 0; }
 .row.nocheck { grid-template-columns: minmax(0, 1fr) auto; }
 .row input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); margin: 0; }
 label.row { cursor: pointer; }
@@ -113,7 +131,8 @@ label.row { cursor: pointer; }
 .chip.reg { background: var(--st-reg-bg); color: var(--st-reg-fg); }
 .chip.des { background: var(--st-des-bg); color: var(--st-des-fg); }
 .chip.pag { background: var(--st-pag-bg); color: var(--st-pag-fg); }
-.row-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.row-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; align-items: center; }
+.row-actions input { padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); min-width: 0; width: 220px; max-width: 100%; }
 .confirm { font-size: .85rem; color: var(--danger); align-self: center; }
 .empty { padding: 18px 4px; color: var(--muted); text-align: center; }
 .selall { display: flex; align-items: center; gap: 8px; font-size: .9rem; color: var(--muted); cursor: pointer; }
@@ -123,17 +142,27 @@ label.row { cursor: pointer; }
 .actionbar .btn { flex: 1 1 220px; }
 .hint { font-size: .8rem; color: var(--muted); }
 
-.sync { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-size: .88rem; }
-.sync-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
-.sync[data-s="ok"] .sync-dot { background: var(--st-pag-fg); }
-.sync[data-s="busy"] .sync-dot { background: var(--st-reg-fg); }
-.sync[data-s="err"] .sync-dot { background: var(--danger); }
-.sync[data-s="err"] #sync-msg { color: var(--danger); }
-#sync-msg { flex: 1 1 200px; min-width: 0; }
-.sync a { color: var(--accent); font-weight: 600; }
+/* ---------- enviados ---------- */
+.range { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.range .field { flex: 1 1 150px; }
+.quick { display: flex; flex-wrap: wrap; gap: 6px; }
+.ind-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.ind { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 4px; min-width: 0; background: var(--surface); }
+.ind.total { background: var(--st-des-bg); border-color: transparent; color: var(--st-des-fg); }
+.ind .ind-name { font-size: .78rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); overflow-wrap: anywhere; }
+.ind.total .ind-name { color: inherit; }
+.ind b { font-family: var(--font-display); font-size: 2rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.ind b small { font-family: var(--font-body); font-size: .85rem; font-weight: 600; margin-left: 4px; }
+.ind .ind-sub { font-size: .82rem; font-variant-numeric: tabular-nums; }
+.bar { height: 6px; border-radius: 999px; background: var(--st-des-bg); overflow: hidden; display: flex; }
+.bar i { display: block; height: 100%; background: var(--st-pag-fg); }
+.ind.total .bar { background: var(--surface); }
+
 .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--surface); padding: 10px 16px; border-radius: 8px; font-weight: 500; max-width: calc(100% - 32px); z-index: 20; }
 
 @media (max-width: 620px) {
+  .filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .btn-excel { grid-column: 1 / -1; }
   .form-grid { grid-template-columns: 1fr 1fr; }
   .form-grid .f-plaza { grid-column: 1 / -1; }
   .pipeline { grid-template-columns: 1fr 1fr 1fr; }
@@ -143,6 +172,7 @@ label.row { cursor: pointer; }
   .row.nocheck { grid-template-columns: minmax(0, 1fr); }
   .row .row-actions { grid-column: 1 / -1; justify-content: flex-start; }
   .row:not(.nocheck) .row-actions { padding-left: 32px; }
+  .brand-row { flex-wrap: wrap; }
 }
 @media (max-width: 380px) { .filters { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: no-preference) { .tab, .btn, .stage { transition: background-color .15s, color .15s, border-color .15s; } }
@@ -150,22 +180,61 @@ label.row { cursor: pointer; }
 </head>
 <body>
 
+<div class="boot" id="boot">Cargando…</div>
+
+<!-- ============ LOGIN ============ -->
+<div class="login wrap" id="login" hidden>
+  <form class="login-card" id="form-login" novalidate>
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+        <circle cx="17" cy="17" r="10" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+        <circle cx="17" cy="17" r="4.5" fill="var(--accent)"/>
+        <path d="M17 1v32M1 17h32" stroke="var(--ink)" stroke-width="1.6"/>
+      </svg>
+      <div>
+        <h1>Control de Lotes</h1>
+        <p>Cartones de raspadita</p>
+      </div>
+    </div>
+    <label class="field"><span>Usuario</span>
+      <input id="in-user" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Ej: juan" required>
+    </label>
+    <label class="field"><span>Contraseña</span>
+      <input id="in-pass" type="password" autocomplete="current-password" required>
+    </label>
+    <button class="btn primary" type="submit" id="btn-login">Entrar</button>
+    <span class="err" id="login-err" role="alert"></span>
+    <p class="login-help">Si olvidaste tu contraseña, pídele al administrador que te asigne una nueva.</p>
+  </form>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" hidden>
 <header class="top">
-  <div class="wrap brand">
-    <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
-      <circle cx="17" cy="17" r="10" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
-      <circle cx="17" cy="17" r="4.5" fill="var(--accent)"/>
-      <path d="M17 1v32M1 17h32" stroke="var(--ink)" stroke-width="1.6"/>
-    </svg>
-    <div>
-      <h1>Control de Lotes</h1>
-      <p>Cartones de raspadita</p>
+  <div class="wrap brand-row">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+        <circle cx="17" cy="17" r="10" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+        <circle cx="17" cy="17" r="4.5" fill="var(--accent)"/>
+        <path d="M17 1v32M1 17h32" stroke="var(--ink)" stroke-width="1.6"/>
+      </svg>
+      <div>
+        <h1>Control de Lotes</h1>
+        <p>Cartones de raspadita</p>
+      </div>
+    </div>
+    <div class="userbox">
+      <span class="who" id="user-name"></span>
+      <span class="role" id="user-role"></span>
+      <button class="btn small" type="button" id="btn-logout">Salir</button>
     </div>
   </div>
   <nav class="wrap tabs" role="tablist" aria-label="Vistas">
     <button class="tab" role="tab" id="tab-agregar" data-view="agregar" aria-selected="true">Agregar</button>
     <button class="tab" role="tab" id="tab-despachos" data-view="despachos" aria-selected="false">Despachos <span class="badge" id="badge-desp">0</span></button>
-    <button class="tab" role="tab" id="tab-pagos" data-view="pagos" aria-selected="false">Pagos <span class="badge" id="badge-pago">0</span></button>
+    <button class="tab" role="tab" id="tab-enviados" data-view="enviados" aria-selected="false">Enviados</button>
+    <button class="tab" role="tab" id="tab-pagos" data-view="pagos" aria-selected="false" data-admin>Pagos <span class="badge" id="badge-pago">0</span></button>
+    <button class="tab" role="tab" id="tab-plazas" data-view="plazas" aria-selected="false" data-admin>Plazas</button>
   </nav>
 </header>
 
@@ -179,15 +248,15 @@ label.row { cursor: pointer; }
     <label class="field"><span>Buscar</span>
       <input id="f-buscar" type="search" placeholder="Código o plaza" autocomplete="off">
     </label>
+    <button class="btn btn-excel" type="button" id="btn-excel">Descargar Excel</button>
   </section>
-
 
   <section class="pipeline" aria-label="Resumen">
     <button class="stage reg" data-view="despachos"><small>Sin despachar</small><b id="s-reg-n">0</b><span id="s-reg-c">0 cartones</span></button>
     <span class="arrow" aria-hidden="true">→</span>
-    <button class="stage des" data-view="pagos"><small>Despachado, sin pago</small><b id="s-des-n">0</b><span id="s-des-c">0 cartones</span></button>
+    <button class="stage des" data-view="enviados"><small>Despachado, sin pago</small><b id="s-des-n">0</b><span id="s-des-c">0 cartones</span></button>
     <span class="arrow" aria-hidden="true">→</span>
-    <button class="stage pag" data-view="pagos"><small>Pagado</small><b id="s-pag-n">0</b><span id="s-pag-c">0 cartones</span></button>
+    <button class="stage pag" data-view="enviados"><small>Pagado</small><b id="s-pag-n">0</b><span id="s-pag-c">0 cartones</span></button>
   </section>
 
   <!-- AGREGAR -->
@@ -195,8 +264,8 @@ label.row { cursor: pointer; }
     <form class="card" id="form-lote" novalidate>
       <div class="card-head"><h2 id="form-title">Nuevo lote</h2></div>
       <div class="form-grid">
-        <label class="field f-plaza"><span>Nombre de la plaza</span>
-          <input id="in-plaza" list="dl-plazas" autocomplete="off" placeholder="Ej: Plaza Minorista" required>
+        <label class="field f-plaza"><span>Plaza</span>
+          <select id="in-plaza" required><option value="">Selecciona la plaza</option></select>
         </label>
         <label class="field"><span>Código del lote</span>
           <input id="in-codigo" autocomplete="off" placeholder="Ej: L-2041" required>
@@ -205,7 +274,7 @@ label.row { cursor: pointer; }
           <input id="in-cartones" type="number" inputmode="numeric" min="1" step="1" placeholder="0" required>
         </label>
       </div>
-      <datalist id="dl-plazas"></datalist>
+      <p class="hint" id="no-plazas" hidden></p>
       <div class="form-actions">
         <button class="btn primary" type="submit" id="btn-guardar">Agregar lote</button>
         <button class="btn" type="button" id="btn-cancelar" hidden>Cancelar edición</button>
@@ -231,13 +300,32 @@ label.row { cursor: pointer; }
         <button class="btn primary" id="btn-desp" disabled>Marcar como despachado</button>
       </div>
     </div>
+    <p class="hint">Los lotes que marques aparecen en la pestaña <button class="link" type="button" data-view="enviados">Enviados</button>.</p>
+  </section>
+
+  <!-- ENVIADOS -->
+  <section class="view" id="v-enviados" role="tabpanel" aria-labelledby="tab-enviados" hidden>
     <div class="card">
-      <div class="card-head"><h2>Despachados</h2><span class="hint">Más recientes primero</span></div>
-      <ul class="list" id="list-desp"></ul>
+      <div class="card-head"><h2>Lotes enviados por plaza</h2><span class="hint" id="env-rango-txt"></span></div>
+      <div class="range">
+        <label class="field"><span>Desde</span><input type="date" id="env-desde"></label>
+        <label class="field"><span>Hasta</span><input type="date" id="env-hasta"></label>
+      </div>
+      <div class="quick" aria-label="Rangos rápidos">
+        <button class="btn small" type="button" data-rango="mes">Este mes</button>
+        <button class="btn small" type="button" data-rango="mes-ant">Mes anterior</button>
+        <button class="btn small" type="button" data-rango="7">Últimos 7 días</button>
+        <button class="btn small" type="button" data-rango="todo">Todo</button>
+      </div>
+      <div class="ind-grid" id="env-ind"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Enviados en el rango</h2><span class="hint">Más recientes primero</span></div>
+      <ul class="list" id="list-env"></ul>
     </div>
   </section>
 
-  <!-- PAGOS -->
+  <!-- PAGOS (admin) -->
   <section class="view" id="v-pagos" role="tabpanel" aria-labelledby="tab-pagos" hidden>
     <div class="card">
       <div class="card-head">
@@ -255,62 +343,98 @@ label.row { cursor: pointer; }
       <ul class="list" id="list-pag"></ul>
     </div>
   </section>
+
+  <!-- PLAZAS (admin) -->
+  <section class="view" id="v-plazas" role="tabpanel" aria-labelledby="tab-plazas" hidden>
+    <form class="card" id="form-plaza" novalidate>
+      <div class="card-head"><h2>Nueva plaza</h2></div>
+      <div class="form-actions">
+        <label class="field" style="flex: 1 1 260px"><span>Nombre de la plaza</span>
+          <input id="in-plaza-nombre" autocomplete="off" placeholder="Ej: Plaza Minorista" maxlength="120">
+        </label>
+        <button class="btn primary" type="submit" id="btn-plaza" style="align-self: end">Crear plaza</button>
+      </div>
+      <span class="err" id="plaza-err" role="alert"></span>
+    </form>
+    <div class="card" id="plazas-faltan" hidden>
+      <div class="card-head"><h2>Plazas en tus lotes que no están en la lista</h2></div>
+      <p class="hint" id="plazas-faltan-txt"></p>
+      <div><button class="btn primary" type="button" id="btn-importar">Agregarlas a la lista</button></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Plazas</h2><span class="hint" id="hint-plazas"></span></div>
+      <ul class="list" id="list-plazas"></ul>
+    </div>
+  </section>
 </main>
+</div>
 
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="firebase-config.js"></script>
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
-  const VIEWS = ["agregar", "despachos", "pagos"];
+  // Los usuarios se crean en Firebase con este dominio: juan → juan@lotes.app
+  const USER_DOMAIN = "lotes.app";
+  const ALL_VIEWS = ["agregar", "despachos", "enviados", "pagos", "plazas"];
+  const ADMIN_VIEWS = ["pagos", "plazas"];
   const state = {
-    lotes: [], ready: false, view: "agregar",
+    user: null, userName: "", admin: false,
+    lotes: [], plazas: [], ready: false, view: "agregar",
     plaza: "", q: "",
     selDesp: new Set(), selPago: new Set(),
     editId: null, confirmDel: null, busy: false,
+    plazaEdit: null, plazaDel: null,
+    envDesde: "", envHasta: "",
   };
-  let fs = null, col = null;
+  let fs = null, auth = null, colLotes = null, colPlazas = null;
+  let unsubs = [];
 
   // ---------- helpers ----------
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const num = (n) => Number(n || 0).toLocaleString("es-CO");
   const cart = (n) => num(n) + (Number(n) === 1 ? " cartón" : " cartones");
-  const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
-  const fdate = (iso) => { if (!iso) return ""; const [y, m, d] = String(iso).slice(0, 10).split("-"); return d && m && y ? `${d}/${m}/${y}` : ""; };
+  const lotesTxt = (n) => num(n) + (Number(n) === 1 ? " lote" : " lotes");
+  const iso = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  const today = () => iso(new Date());
+  const fdate = (s) => { if (!s) return ""; const [y, m, d] = String(s).slice(0, 10).split("-"); return d && m && y ? `${d}/${m}/${y}` : ""; };
   const norm = (s) => String(s || "").trim().toLocaleLowerCase("es");
+  const clean = (s) => String(s || "").trim().replace(/\s+/g, " ");
   const sum = (arr) => arr.reduce((a, l) => a + (Number(l.cartones) || 0), 0);
   const byDesc = (k) => (a, b) => String(b[k] || "").localeCompare(String(a[k] || "")) || String(b.fechaRegistro || "").localeCompare(String(a.fechaRegistro || ""));
+  const byName = (a, b) => a.localeCompare(b, "es");
 
   let toastTimer;
   function toast(msg) {
     const t = $("toast"); t.textContent = msg; t.hidden = false;
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 2600);
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 2800);
   }
   function notice(msg) { const n = $("notice"); n.textContent = msg || ""; n.hidden = !msg; }
   function writeError(e) {
     const code = e && e.code;
-    if (code === "permission-denied") toast("La base de datos rechazó el cambio. Revisa los datos e inténtalo otra vez.");
+    if (code === "permission-denied") toast("No tienes permiso para hacer ese cambio.");
     else if (code === "resource-exhausted") toast("Se alcanzó el límite diario gratis de Firebase. Inténtalo mañana.");
-    else toast("No se pudo guardar. Revisa tu conexión e inténtalo otra vez.");
+    else if (code === "unavailable") toast("Sin conexión. Revisa tu internet e inténtalo otra vez.");
+    else toast("No se pudo guardar. Inténtalo otra vez.");
   }
 
   const matches = (l) => (!state.plaza || l.plaza === state.plaza) &&
     (!state.q || norm(l.codigo).includes(state.q) || norm(l.plaza).includes(state.q));
   const stage = (l) => (l.pagado ? "pag" : l.despachado ? "des" : "reg");
-  const chip = (l) => {
-    const s = stage(l);
-    const label = s === "pag" ? "Pagado" : s === "des" ? "Despachado" : "Sin despachar";
-    return `<span class="chip ${s}">${label}</span>`;
-  };
+  const ESTADO = { reg: "Sin despachar", des: "Despachado", pag: "Pagado" };
+  const chip = (l) => `<span class="chip ${stage(l)}">${ESTADO[stage(l)]}</span>`;
+  const plazaNames = () => state.plazas.map((p) => p.nombre).sort(byName);
 
-  // ---------- cambio de vista ----------
+  // ---------- vistas ----------
   function setView(v) {
-    if (!VIEWS.includes(v)) v = "agregar";
+    if (!ALL_VIEWS.includes(v) || (!state.admin && ADMIN_VIEWS.includes(v))) v = "agregar";
     state.view = v;
-    VIEWS.forEach((name) => {
+    ALL_VIEWS.forEach((name) => {
       $("v-" + name).hidden = name !== v;
       $("tab-" + name).setAttribute("aria-selected", String(name === v));
     });
@@ -340,16 +464,24 @@ label.row { cursor: pointer; }
   }
 
   function render() {
+    if (!state.user) return;
+    document.querySelectorAll("[data-admin]").forEach((el) => (el.hidden = !state.admin));
+    $("user-name").textContent = state.userName;
+    $("user-role").textContent = state.admin ? "Administrador" : "Operador";
+    $("user-role").classList.toggle("admin", state.admin);
+
     const all = state.lotes;
     const vis = all.filter(matches);
     const reg = vis.filter((l) => !l.despachado && !l.pagado);
     const des = vis.filter((l) => l.despachado && !l.pagado);
     const pag = vis.filter((l) => l.pagado);
 
-    const plazas = [...new Set(all.map((l) => l.plaza).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"));
-    if (state.plaza && !plazas.includes(state.plaza)) state.plaza = "";
-    $("f-plaza").innerHTML = `<option value="">Todas las plazas</option>` + plazas.map((p) => `<option value="${esc(p)}"${p === state.plaza ? " selected" : ""}>${esc(p)}</option>`).join("");
-    $("dl-plazas").innerHTML = plazas.map((p) => `<option value="${esc(p)}"></option>`).join("");
+    // filtro de plaza: plazas de la lista + las que aparezcan en lotes
+    const filtroPlazas = [...new Set([...plazaNames(), ...all.map((l) => l.plaza).filter(Boolean)])].sort(byName);
+    if (state.plaza && !filtroPlazas.includes(state.plaza)) state.plaza = "";
+    $("f-plaza").innerHTML = `<option value="">Todas las plazas</option>` + filtroPlazas.map((p) => `<option value="${esc(p)}"${p === state.plaza ? " selected" : ""}>${esc(p)}</option>`).join("");
+
+    renderFormPlazas();
 
     $("s-reg-n").textContent = num(reg.length); $("s-reg-c").textContent = cart(sum(reg));
     $("s-des-n").textContent = num(des.length); $("s-des-c").textContent = cart(sum(des));
@@ -360,43 +492,212 @@ label.row { cursor: pointer; }
     const wait = !state.ready ? "Cargando lotes…" : null;
     const filtered = state.plaza || state.q;
 
-    $("hint-all").textContent = state.ready ? `${num(vis.length)} ${vis.length === 1 ? "lote" : "lotes"} · ${cart(sum(vis))}` : "";
+    // Agregar
+    $("hint-all").textContent = state.ready ? `${lotesTxt(vis.length)} · ${cart(sum(vis))}` : "";
     fill("list-all", vis.slice().sort(byDesc("fechaRegistro")), (l) => {
-      let actions;
-      if (state.confirmDel === l.id) {
+      let actions = "";
+      if (state.admin && state.confirmDel === l.id) {
         actions = `<span class="confirm">¿Eliminar este lote?</span>
           <button class="btn small danger" data-act="del-yes" data-id="${esc(l.id)}">Sí, eliminar</button>
           <button class="btn small" data-act="del-no">No</button>`;
-      } else {
+      } else if (state.admin) {
         actions = `<button class="btn small" data-act="edit" data-id="${esc(l.id)}">Editar</button>
           <button class="btn small" data-act="del" data-id="${esc(l.id)}">Eliminar</button>`;
       }
-      const meta = chip(l) + (l.fechaRegistro ? `<span>Registrado ${fdate(l.fechaRegistro)}</span>` : "");
+      const meta = chip(l) + (l.fechaRegistro ? `<span>Registrado ${fdate(l.fechaRegistro)}${l.creadoPor ? " por " + esc(l.creadoPor) : ""}</span>` : "");
       return { meta, actions };
     }, wait || (filtered ? "Ningún lote coincide con el filtro." : "Aún no hay lotes. Agrega el primero con el formulario de arriba."));
 
+    // Despachos
     fill("list-pdesp", reg.slice().sort(byDesc("fechaRegistro")), (l) => ({
       check: "desp", selSet: state.selDesp,
       meta: l.fechaRegistro ? `<span>Registrado ${fdate(l.fechaRegistro)}</span>` : "",
     }), wait || (filtered ? "Ningún lote por despachar con este filtro." : "No hay lotes por despachar."));
-    fill("list-desp", vis.filter((l) => l.despachado).sort(byDesc("fechaDespacho")), (l) => ({
-      meta: `<span>Despachado ${fdate(l.fechaDespacho)}</span>` + (l.pagado ? chip(l) : ""),
-      actions: l.pagado ? "" : `<button class="btn small" data-act="undo-desp" data-id="${esc(l.id)}">Deshacer</button>`,
-    }), wait || "Todavía no hay lotes despachados.");
 
-    fill("list-ppago", des.slice().sort(byDesc("fechaDespacho")), (l) => ({
-      check: "pago", selSet: state.selPago,
-      meta: `<span>Despachado ${fdate(l.fechaDespacho)}</span>`,
-    }), wait || (reg.length ? "No hay lotes pendientes de pago. Primero márcalos como despachados." : "No hay lotes pendientes de pago."));
-    fill("list-pag", pag.slice().sort(byDesc("fechaPago")), (l) => ({
-      meta: `<span>Pagado ${fdate(l.fechaPago)}</span><span>Despachado ${fdate(l.fechaDespacho)}</span>`,
-      actions: `<button class="btn small" data-act="undo-pago" data-id="${esc(l.id)}">Deshacer</button>`,
-    }), wait || "Todavía no hay lotes pagados.");
+    renderEnviados(vis, wait);
+
+    // Pagos
+    if (state.admin) {
+      fill("list-ppago", des.slice().sort(byDesc("fechaDespacho")), (l) => ({
+        check: "pago", selSet: state.selPago,
+        meta: `<span>Despachado ${fdate(l.fechaDespacho)}</span>`,
+      }), wait || (reg.length ? "No hay lotes pendientes de pago. Primero márcalos como despachados." : "No hay lotes pendientes de pago."));
+      fill("list-pag", pag.slice().sort(byDesc("fechaPago")), (l) => ({
+        meta: `<span>Pagado ${fdate(l.fechaPago)}</span><span>Despachado ${fdate(l.fechaDespacho)}</span>`,
+        actions: `<button class="btn small" data-act="undo-pago" data-id="${esc(l.id)}">Deshacer</button>`,
+      }), wait || "Todavía no hay lotes pagados.");
+      renderPlazas();
+    }
 
     syncSel("desp", reg, state.selDesp);
     syncSel("pago", des, state.selPago);
   }
 
+  function renderFormPlazas() {
+    const names = plazaNames();
+    const sel = $("in-plaza");
+    const current = sel.value;
+    // Al editar un lote cuya plaza ya no está en la lista, la mostramos igual para no perderla.
+    const extra = state.editId && current && !names.includes(current) ? [current] : [];
+    sel.innerHTML = `<option value="">Selecciona la plaza</option>` + [...names, ...extra].map((p) => `<option value="${esc(p)}">${esc(p)}</option>`).join("");
+    sel.value = [...names, ...extra].includes(current) ? current : "";
+    const none = state.ready && names.length === 0;
+    $("no-plazas").hidden = !none;
+    $("no-plazas").innerHTML = state.admin
+      ? `Todavía no hay plazas. Créalas en la pestaña <button class="link" type="button" data-view="plazas">Plazas</button>.`
+      : "Todavía no hay plazas. Pídele al administrador que las cree.";
+    $("btn-guardar").disabled = none || state.busy;
+  }
+
+  // ---------- Enviados ----------
+  function renderEnviados(vis, wait) {
+    const d = state.envDesde, h = state.envHasta;
+    const enRango = vis.filter((l) => l.despachado && l.fechaDespacho && (!d || l.fechaDespacho >= d) && (!h || l.fechaDespacho <= h));
+    $("env-rango-txt").textContent = d || h ? `${d ? fdate(d) : "inicio"} → ${h ? fdate(h) : "hoy"}` : "Todo el historial";
+
+    const porPlaza = new Map();
+    enRango.forEach((l) => {
+      const p = porPlaza.get(l.plaza) || { lotes: 0, cartones: 0, pagados: 0 };
+      p.lotes++; p.cartones += Number(l.cartones) || 0; if (l.pagado) p.pagados++;
+      porPlaza.set(l.plaza, p);
+    });
+    const card = (name, p, total) => {
+      const pct = p.lotes ? Math.round((p.pagados / p.lotes) * 100) : 0;
+      return `<div class="ind${total ? " total" : ""}">
+        <span class="ind-name">${esc(name)}</span>
+        <b>${num(p.lotes)}<small>${p.lotes === 1 ? "lote" : "lotes"}</small></b>
+        <span class="ind-sub">${cart(p.cartones)}</span>
+        <div class="bar" title="${pct}% pagado"><i style="width:${pct}%"></i></div>
+        <span class="ind-sub">${num(p.pagados)} pagados · ${num(p.lotes - p.pagados)} sin pago</span>
+      </div>`;
+    };
+    const tot = { lotes: enRango.length, cartones: sum(enRango), pagados: enRango.filter((l) => l.pagado).length };
+    const filas = [...porPlaza.entries()].sort((a, b) => b[1].lotes - a[1].lotes || byName(a[0], b[0]));
+    $("env-ind").innerHTML = wait ? `<p class="empty">${wait}</p>`
+      : enRango.length ? card(state.plaza ? state.plaza : "Total enviados", tot, true) + (state.plaza ? "" : filas.map(([n, p]) => card(n, p, false)).join(""))
+      : `<p class="empty" style="grid-column: 1 / -1">No hay lotes enviados en este rango.</p>`;
+
+    fill("list-env", enRango.sort(byDesc("fechaDespacho")), (l) => ({
+      meta: `<span>Despachado ${fdate(l.fechaDespacho)}</span>` + chip(l),
+      actions: l.pagado ? "" : `<button class="btn small" data-act="undo-desp" data-id="${esc(l.id)}">Deshacer despacho</button>`,
+    }), wait || "No hay lotes enviados en este rango.");
+  }
+  function setRango(kind) {
+    const now = new Date();
+    if (kind === "mes") { state.envDesde = iso(new Date(now.getFullYear(), now.getMonth(), 1)); state.envHasta = today(); }
+    else if (kind === "mes-ant") { state.envDesde = iso(new Date(now.getFullYear(), now.getMonth() - 1, 1)); state.envHasta = iso(new Date(now.getFullYear(), now.getMonth(), 0)); }
+    else if (kind === "7") { state.envDesde = iso(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6)); state.envHasta = today(); }
+    else { state.envDesde = ""; state.envHasta = ""; }
+    $("env-desde").value = state.envDesde; $("env-hasta").value = state.envHasta;
+    render();
+  }
+  document.querySelectorAll("[data-rango]").forEach((b) => b.addEventListener("click", () => setRango(b.dataset.rango)));
+  $("env-desde").addEventListener("change", (e) => { state.envDesde = e.target.value; render(); });
+  $("env-hasta").addEventListener("change", (e) => { state.envHasta = e.target.value; render(); });
+
+  // ---------- Plazas (admin) ----------
+  function renderPlazas() {
+    const cuenta = new Map();
+    state.lotes.forEach((l) => cuenta.set(l.plaza, (cuenta.get(l.plaza) || 0) + 1));
+    const plazas = state.plazas.slice().sort((a, b) => byName(a.nombre, b.nombre));
+    $("hint-plazas").textContent = state.ready ? `${num(plazas.length)} ${plazas.length === 1 ? "plaza" : "plazas"}` : "";
+    $("list-plazas").innerHTML = plazas.length ? plazas.map((p) => {
+      const n = cuenta.get(p.nombre) || 0;
+      let actions;
+      if (state.plazaEdit === p.id) {
+        actions = `<input id="in-renombrar" value="${esc(p.nombre)}" maxlength="120" aria-label="Nuevo nombre">
+          <button class="btn small primary" data-pact="ren-yes" data-id="${esc(p.id)}">Guardar</button>
+          <button class="btn small" data-pact="ren-no">Cancelar</button>`;
+      } else if (state.plazaDel === p.id) {
+        actions = `<span class="confirm">¿Eliminar esta plaza?</span>
+          <button class="btn small danger" data-pact="del-yes" data-id="${esc(p.id)}">Sí, eliminar</button>
+          <button class="btn small" data-pact="del-no">No</button>`;
+      } else {
+        actions = `<button class="btn small" data-pact="ren" data-id="${esc(p.id)}">Renombrar</button>
+          <button class="btn small" data-pact="del" data-id="${esc(p.id)}"${n ? ` disabled title="Tiene lotes registrados"` : ""}>Eliminar</button>`;
+      }
+      return `<li class="row nocheck"><div class="row-main"><div class="row-top"><span class="code" style="font-family: var(--font-body); font-weight: 600">${esc(p.nombre)}</span></div>
+        <div class="row-sub"><span>${lotesTxt(n)}</span>${n ? "<span>· no se puede eliminar mientras tenga lotes</span>" : ""}</div></div>
+        <div class="row-actions">${actions}</div></li>`;
+    }).join("") : `<li class="empty">${state.ready ? "Todavía no hay plazas. Crea la primera arriba." : "Cargando plazas…"}</li>`;
+
+    const enLista = new Set(state.plazas.map((p) => norm(p.nombre)));
+    const faltan = [...new Set(state.lotes.map((l) => l.plaza).filter((n) => n && !enLista.has(norm(n))))];
+    $("plazas-faltan").hidden = !state.ready || faltan.length === 0;
+    $("plazas-faltan-txt").textContent = faltan.join(", ");
+  }
+
+  async function crearPlazas(nombres) {
+    const batch = fs.batch();
+    nombres.forEach((nombre) => batch.set(colPlazas.doc(), { nombre, creadaEn: new Date().toISOString() }));
+    await batch.commit();
+  }
+
+  $("form-plaza").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const err = $("plaza-err");
+    const nombre = clean($("in-plaza-nombre").value);
+    if (!nombre) { err.textContent = "Escribe el nombre de la plaza."; return $("in-plaza-nombre").focus(); }
+    if (state.plazas.some((p) => norm(p.nombre) === norm(nombre))) { err.textContent = "Esa plaza ya existe."; return $("in-plaza-nombre").focus(); }
+    err.textContent = "";
+    $("btn-plaza").disabled = true;
+    try { await crearPlazas([nombre]); $("in-plaza-nombre").value = ""; toast(`Plaza ${nombre} creada`); }
+    catch (ex) { writeError(ex); }
+    $("btn-plaza").disabled = false;
+  });
+
+  $("btn-importar").addEventListener("click", async () => {
+    const enLista = new Set(state.plazas.map((p) => norm(p.nombre)));
+    const faltan = [...new Set(state.lotes.map((l) => l.plaza).filter((n) => n && !enLista.has(norm(n))))];
+    if (!faltan.length) return;
+    $("btn-importar").disabled = true;
+    try { await crearPlazas(faltan); toast(`${faltan.length} ${faltan.length === 1 ? "plaza agregada" : "plazas agregadas"}`); }
+    catch (ex) { writeError(ex); }
+    $("btn-importar").disabled = false;
+  });
+
+  $("list-plazas").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-pact]");
+    if (!b) return;
+    const act = b.dataset.pact, id = b.dataset.id;
+    const p = state.plazas.find((x) => x.id === id);
+    if (act === "ren") { state.plazaEdit = id; state.plazaDel = null; render(); const i = $("in-renombrar"); if (i) { i.focus(); i.select(); } return; }
+    if (act === "ren-no") { state.plazaEdit = null; return render(); }
+    if (act === "del") { state.plazaDel = id; state.plazaEdit = null; return render(); }
+    if (act === "del-no") { state.plazaDel = null; return render(); }
+    if (!p) return;
+    try {
+      if (act === "ren-yes") {
+        const nuevo = clean($("in-renombrar").value);
+        if (!nuevo) return toast("Escribe el nuevo nombre.");
+        if (state.plazas.some((x) => x.id !== id && norm(x.nombre) === norm(nuevo))) return toast("Ya existe una plaza con ese nombre.");
+        // Renombra la plaza y todos sus lotes en un solo paso.
+        const afectados = state.lotes.filter((l) => l.plaza === p.nombre);
+        for (let i = 0; i < afectados.length || i === 0; i += 400) {
+          const batch = fs.batch();
+          if (i === 0) batch.update(colPlazas.doc(id), { nombre: nuevo });
+          afectados.slice(i, i + 400).forEach((l) => batch.update(colLotes.doc(l.id), { plaza: nuevo }));
+          await batch.commit();
+          if (!afectados.length) break;
+        }
+        if (state.plaza === p.nombre) state.plaza = nuevo;
+        state.plazaEdit = null;
+        toast(`Plaza renombrada a ${nuevo}`);
+      } else if (act === "del-yes") {
+        if (state.lotes.some((l) => l.plaza === p.nombre)) { state.plazaDel = null; render(); return toast("No se puede eliminar: la plaza tiene lotes."); }
+        await colPlazas.doc(id).delete();
+        state.plazaDel = null;
+        toast("Plaza eliminada");
+      }
+    } catch (ex) { writeError(ex); }
+    render();
+  });
+  $("list-plazas").addEventListener("keydown", (e) => {
+    if (e.target.id === "in-renombrar" && e.key === "Enter") { e.preventDefault(); const b = document.querySelector('[data-pact="ren-yes"]'); if (b) b.click(); }
+    if (e.target.id === "in-renombrar" && e.key === "Escape") { state.plazaEdit = null; render(); }
+  });
+
+  // ---------- selección ----------
   function syncSel(kind, list, set) {
     const ids = new Set(list.map((l) => l.id));
     [...set].forEach((id) => { if (!ids.has(id)) set.delete(id); });
@@ -409,14 +710,10 @@ label.row { cursor: pointer; }
     const base = kind === "desp" ? "Marcar como despachado" : "Marcar como pagado";
     const c = sum(list.filter((l) => set.has(l.id)));
     btn.textContent = n ? `${base} (${n} · ${cart(c)})` : base;
-    btn.disabled = !n || !col || state.busy;
+    btn.disabled = !n || !colLotes || state.busy;
   }
-
-  // ---------- filtros ----------
   $("f-plaza").addEventListener("change", (e) => { state.plaza = e.target.value; render(); });
   $("f-buscar").addEventListener("input", (e) => { state.q = norm(e.target.value); render(); });
-
-  // ---------- selección ----------
   document.addEventListener("change", (e) => {
     const t = e.target;
     if (t.dataset && t.dataset.sel) {
@@ -437,7 +734,7 @@ label.row { cursor: pointer; }
 
   // ---------- acciones en grupo ----------
   async function bulk(kind) {
-    if (!col || state.busy) return;
+    if (!colLotes || state.busy) return;
     const set = kind === "desp" ? state.selDesp : state.selPago;
     const ids = [...set];
     const date = $(kind === "desp" ? "d-desp" : "d-pago").value || today();
@@ -445,11 +742,13 @@ label.row { cursor: pointer; }
     const patch = kind === "desp" ? { despachado: true, fechaDespacho: date } : { pagado: true, fechaPago: date };
     state.busy = true; render();
     try {
-      const batch = fs.batch();
-      ids.forEach((id) => batch.update(col.doc(id), patch));
-      await batch.commit();
+      for (let i = 0; i < ids.length; i += 400) {
+        const batch = fs.batch();
+        ids.slice(i, i + 400).forEach((id) => batch.update(colLotes.doc(id), patch));
+        await batch.commit();
+      }
       set.clear();
-      toast(`${ids.length} ${ids.length === 1 ? "lote marcado" : "lotes marcados"} como ${kind === "desp" ? "despachado" : "pagado"}`);
+      toast(`${lotesTxt(ids.length)} ${ids.length === 1 ? "marcado" : "marcados"} como ${kind === "desp" ? "despachado" : "pagado"}`);
     } catch (e) { writeError(e); }
     state.busy = false; render();
   }
@@ -466,27 +765,31 @@ label.row { cursor: pointer; }
     if (act === "edit") return startEdit(id);
     if (act === "del") { state.confirmDel = id; return render(); }
     if (act === "del-no") { state.confirmDel = null; return render(); }
-    if (!col) return;
+    if (!colLotes) return;
     try {
       if (act === "del-yes") {
         state.confirmDel = null;
         if (state.editId === id) resetForm();
-        await col.doc(id).delete(); toast("Lote eliminado");
+        await colLotes.doc(id).delete(); toast("Lote eliminado");
       } else if (act === "undo-desp") {
-        await col.doc(id).update({ despachado: false, fechaDespacho: null }); toast("Despacho deshecho");
+        await colLotes.doc(id).update({ despachado: false, fechaDespacho: null }); toast("Despacho deshecho");
       } else if (act === "undo-pago") {
-        await col.doc(id).update({ pagado: false, fechaPago: null }); toast("Pago deshecho");
+        await colLotes.doc(id).update({ pagado: false, fechaPago: null }); toast("Pago deshecho");
       }
     } catch (err) { writeError(err); }
     render();
   });
 
-  // ---------- formulario ----------
+  // ---------- formulario de lote ----------
   function startEdit(id) {
     const l = state.lotes.find((x) => x.id === id);
-    if (!l) return;
+    if (!l || !state.admin) return;
     state.editId = id;
-    $("in-plaza").value = l.plaza || "";
+    setView("agregar");
+    renderFormPlazas();
+    const sel = $("in-plaza");
+    if (![...sel.options].some((o) => o.value === l.plaza)) sel.insertAdjacentHTML("beforeend", `<option value="${esc(l.plaza)}">${esc(l.plaza)}</option>`);
+    sel.value = l.plaza || "";
     $("in-codigo").value = l.codigo || "";
     $("in-cartones").value = l.cartones || "";
     $("form-title").textContent = "Editar lote " + (l.codigo || "");
@@ -494,11 +797,13 @@ label.row { cursor: pointer; }
     $("btn-cancelar").hidden = false;
     $("form-err").textContent = "";
     $("form-lote").scrollIntoView({ behavior: "smooth", block: "start" });
-    $("in-plaza").focus({ preventScroll: true });
+    $("in-codigo").focus({ preventScroll: true });
   }
   function resetForm() {
     state.editId = null;
+    const plaza = $("in-plaza").value;
     $("form-lote").reset();
+    $("in-plaza").value = plaza; // deja la plaza elegida para agregar varios lotes seguidos
     $("form-title").textContent = "Nuevo lote";
     $("btn-guardar").textContent = "Agregar lote";
     $("btn-cancelar").hidden = true;
@@ -509,62 +814,147 @@ label.row { cursor: pointer; }
   $("form-lote").addEventListener("submit", async (e) => {
     e.preventDefault();
     const err = $("form-err");
-    const plaza = $("in-plaza").value.trim().replace(/\s+/g, " ");
-    const codigo = $("in-codigo").value.trim().replace(/\s+/g, " ");
+    const plaza = $("in-plaza").value;
+    const codigo = clean($("in-codigo").value);
     const cartones = Number($("in-cartones").value);
-    if (!plaza) { err.textContent = "Escribe el nombre de la plaza."; return $("in-plaza").focus(); }
+    if (!plaza) { err.textContent = "Selecciona la plaza."; return $("in-plaza").focus(); }
     if (!codigo) { err.textContent = "Escribe el código del lote."; return $("in-codigo").focus(); }
     if (!Number.isInteger(cartones) || cartones < 1) { err.textContent = "La cantidad de cartones debe ser un número entero mayor que 0."; return $("in-cartones").focus(); }
     const dup = state.lotes.find((l) => l.id !== state.editId && norm(l.codigo) === norm(codigo));
     if (dup) { err.textContent = `Ya existe un lote con el código ${dup.codigo} (${dup.plaza}).`; return $("in-codigo").focus(); }
-    if (!col) { err.textContent = "No hay conexión con la base de datos, así que no se puede guardar."; return; }
-    // Reusa la escritura exacta de una plaza existente para que el filtro las agrupe.
-    const known = state.lotes.find((l) => norm(l.plaza) === norm(plaza));
-    const plazaFinal = known ? known.plaza : plaza;
+    if (!colLotes) { err.textContent = "No hay conexión con la base de datos, así que no se puede guardar."; return; }
     err.textContent = "";
     const btn = $("btn-guardar"); btn.disabled = true;
     try {
       if (state.editId) {
-        await col.doc(state.editId).update({ plaza: plazaFinal, codigo, cartones });
+        await colLotes.doc(state.editId).update({ plaza, codigo, cartones });
         toast("Cambios guardados");
         resetForm();
       } else {
-        await col.add({ plaza: plazaFinal, codigo, cartones, fechaRegistro: new Date().toISOString(), despachado: false, fechaDespacho: null, pagado: false, fechaPago: null });
+        await colLotes.add({ plaza, codigo, cartones, fechaRegistro: new Date().toISOString(), despachado: false, fechaDespacho: null, pagado: false, fechaPago: null, creadoPor: state.userName });
         toast(`Lote ${codigo} agregado`);
         $("in-codigo").value = ""; $("in-cartones").value = "";
         $("in-codigo").focus();
       }
     } catch (ex) { writeError(ex); }
     btn.disabled = false;
+    renderFormPlazas();
   });
+
+  // ---------- Excel ----------
+  $("btn-excel").addEventListener("click", () => {
+    if (typeof XLSX === "undefined") return toast("No se pudo cargar la herramienta de Excel. Revisa tu conexión y recarga la página.");
+    const vis = state.lotes.filter(matches).sort((a, b) => byName(a.plaza, b.plaza) || String(a.fechaRegistro || "").localeCompare(String(b.fechaRegistro || "")));
+    if (!vis.length) return toast("No hay lotes para descargar con estos filtros.");
+    const lotes = [["Plaza", "Código del lote", "Cartones", "Estado", "Fecha de registro", "Fecha de despacho", "Fecha de pago", "Registrado por"]]
+      .concat(vis.map((l) => [l.plaza, l.codigo, Number(l.cartones) || 0, ESTADO[stage(l)], fdate(l.fechaRegistro), fdate(l.fechaDespacho), fdate(l.fechaPago), l.creadoPor || ""]));
+    const res = new Map();
+    vis.forEach((l) => {
+      const r = res.get(l.plaza) || { lotes: 0, cartones: 0, reg: 0, regC: 0, des: 0, desC: 0, pag: 0, pagC: 0 };
+      const c = Number(l.cartones) || 0, s = stage(l);
+      r.lotes++; r.cartones += c; r[s]++; r[s + "C"] += c;
+      res.set(l.plaza, r);
+    });
+    const head = ["Plaza", "Total lotes", "Total cartones", "Sin despachar (lotes)", "Sin despachar (cartones)", "Despachados sin pago (lotes)", "Despachados sin pago (cartones)", "Pagados (lotes)", "Pagados (cartones)"];
+    const rows = [...res.entries()].sort((a, b) => byName(a[0], b[0])).map(([p, r]) => [p, r.lotes, r.cartones, r.reg, r.regC, r.des, r.desC, r.pag, r.pagC]);
+    const total = rows.reduce((t, r) => t.map((v, i) => (i === 0 ? "TOTAL" : v + r[i])), ["TOTAL", 0, 0, 0, 0, 0, 0, 0, 0]);
+    const wb = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.aoa_to_sheet(lotes);
+    ws1["!cols"] = [28, 16, 11, 15, 16, 17, 14, 16].map((w) => ({ wch: w }));
+    ws1["!autofilter"] = { ref: ws1["!ref"] };
+    const ws2 = XLSX.utils.aoa_to_sheet([head, ...rows, total]);
+    ws2["!cols"] = [28, 11, 14, 14, 16, 18, 20, 12, 14].map((w) => ({ wch: w }));
+    XLSX.utils.book_append_sheet(wb, ws1, "Lotes");
+    XLSX.utils.book_append_sheet(wb, ws2, "Resumen por plaza");
+    const sufijo = state.plaza ? "-" + state.plaza.replace(/[^\p{L}\p{N}]+/gu, "-").toLowerCase() : "";
+    XLSX.writeFile(wb, `control-lotes${sufijo}-${today()}.xlsx`);
+    toast("Excel descargado");
+  });
+
+  // ---------- login ----------
+  function showScreen(which) {
+    $("boot").hidden = which !== "boot";
+    $("login").hidden = which !== "login";
+    $("app").hidden = which !== "app";
+  }
+  const toEmail = (u) => { u = String(u || "").trim().toLowerCase(); return u.includes("@") ? u : `${u}@${USER_DOMAIN}`; };
+  const toUserName = (email) => String(email || "").replace(new RegExp("@" + USER_DOMAIN.replace(/\./g, "\\.") + "$"), "");
+
+  $("form-login").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const err = $("login-err");
+    const user = $("in-user").value.trim();
+    const pass = $("in-pass").value;
+    if (!user) { err.textContent = "Escribe tu usuario."; return $("in-user").focus(); }
+    if (!pass) { err.textContent = "Escribe tu contraseña."; return $("in-pass").focus(); }
+    if (!auth) { err.textContent = "La app no está conectada a Firebase."; return; }
+    err.textContent = "";
+    const btn = $("btn-login"); btn.disabled = true; btn.textContent = "Entrando…";
+    try {
+      await auth.signInWithEmailAndPassword(toEmail(user), pass);
+      $("in-pass").value = "";
+    } catch (ex) {
+      const c = ex && ex.code;
+      if (c === "auth/invalid-credential" || c === "auth/wrong-password" || c === "auth/user-not-found" || c === "auth/invalid-email") err.textContent = "Usuario o contraseña incorrectos.";
+      else if (c === "auth/user-disabled") err.textContent = "Este usuario está desactivado. Habla con el administrador.";
+      else if (c === "auth/too-many-requests") err.textContent = "Demasiados intentos. Espera unos minutos e inténtalo otra vez.";
+      else if (c === "auth/network-request-failed") err.textContent = "Sin conexión. Revisa tu internet.";
+      else if (c === "auth/operation-not-allowed") err.textContent = "El inicio de sesión con contraseña no está activado en Firebase.";
+      else err.textContent = "No se pudo iniciar sesión. Inténtalo otra vez.";
+    }
+    btn.disabled = false; btn.textContent = "Entrar";
+  });
+  $("btn-logout").addEventListener("click", () => auth && auth.signOut());
+
+  function stopData() { unsubs.forEach((u) => u()); unsubs = []; }
+
+  async function startData(user) {
+    state.user = user;
+    state.userName = toUserName(user.email);
+    state.admin = false; state.ready = false; state.lotes = []; state.plazas = [];
+    try { state.admin = (await fs.doc("admins/" + user.uid).get()).exists; } catch (e) { state.admin = false; }
+    let start = (location.hash || "").slice(1);
+    if (!ALL_VIEWS.includes(start)) { try { start = localStorage.getItem("lotes.view") || ""; } catch (e) {} }
+    setView(start);
+    showScreen("app");
+    render();
+    let gotLotes = false, gotPlazas = false;
+    const done = () => { if (gotLotes && gotPlazas) state.ready = true; render(); };
+    unsubs.push(colLotes.onSnapshot((snap) => {
+      state.lotes = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      gotLotes = true; notice(""); done();
+    }, () => { gotLotes = true; notice("No se pudieron cargar los lotes. Revisa tu conexión y recarga la página."); done(); }));
+    unsubs.push(colPlazas.onSnapshot((snap) => {
+      state.plazas = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.nombre);
+      gotPlazas = true; done();
+    }, () => { gotPlazas = true; notice("No se pudieron cargar las plazas. Revisa que las reglas de Firebase estén actualizadas."); done(); }));
+  }
 
   // ---------- inicio ----------
   $("d-desp").value = today();
   $("d-pago").value = today();
-  let start = (location.hash || "").slice(1);
-  if (!VIEWS.includes(start)) { try { start = localStorage.getItem("lotes.view") || ""; } catch (e) {} }
-  setView(start);
-  render();
+  setRango("mes");
 
   const cfg = window.FIREBASE_CONFIG;
   if (typeof firebase === "undefined" || !cfg || !cfg.projectId || /PEGA/.test(cfg.apiKey || "")) {
-    state.ready = true;
-    notice("La app todavía no está conectada a Firebase. Falta completar el archivo firebase-config.js.");
-    render();
+    showScreen("login");
+    $("login-err").textContent = "La app todavía no está conectada a Firebase.";
     return;
   }
   firebase.initializeApp(cfg);
+  auth = firebase.auth();
   fs = firebase.firestore();
-  col = fs.collection("lotes");
-  col.onSnapshot((snap) => {
-    state.lotes = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    state.ready = true;
-    notice("");
-    render();
-  }, () => {
-    state.ready = true;
-    notice("No se pudo conectar con la base de datos. Revisa tu conexión y recarga la página.");
-    render();
+  colLotes = fs.collection("lotes");
+  colPlazas = fs.collection("plazas");
+  auth.onAuthStateChanged((user) => {
+    stopData();
+    if (user) startData(user);
+    else {
+      state.user = null; state.lotes = []; state.plazas = []; state.admin = false;
+      state.selDesp.clear(); state.selPago.clear(); resetForm();
+      showScreen("login");
+      setTimeout(() => $("in-user").focus(), 0);
+    }
   });
 })();
 </script>
