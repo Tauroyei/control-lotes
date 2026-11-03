@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Control de Lotes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: sticky header with three tabs (Agregar / Despachos / Pagos); a pipeline strip
+   Registrado → Despachado → Pagado under shared filters; each view is a single column of
+   lists with an action bar. Colors borrow process inks: yellow = sin despachar, cyan = despachado, green = pagado. */
+:root {
+  --paper: #f3f5f8;
+  --surface: #ffffff;
+  --ink: #152030;
+  --muted: #5a6577;
+  --line: #dbe1e9;
+  --accent: #0a7fa0;
+  --accent-ink: #ffffff;
+  --st-reg-fg: #8a5a00; --st-reg-bg: #fdf1d4;
+  --st-des-fg: #0a6884; --st-des-bg: #dcf1f7;
+  --st-pag-fg: #23704a; --st-pag-bg: #def2e6;
+  --danger: #b3261e; --danger-bg: #fbe4e2;
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e131a; --surface: #161d27; --ink: #e5eaf1; --muted: #97a2b2; --line: #283240;
+    --accent: #43bfdf; --accent-ink: #06222b;
+    --st-reg-fg: #f2c46b; --st-reg-bg: #3a2e14;
+    --st-des-fg: #7fd6ec; --st-des-bg: #123540;
+    --st-pag-fg: #82d6a6; --st-pag-bg: #14372a;
+    --danger: #f2a39d; --danger-bg: #42201e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0e131a; --surface: #161d27; --ink: #e5eaf1; --muted: #97a2b2; --line: #283240;
+  --accent: #43bfdf; --accent-ink: #06222b;
+  --st-reg-fg: #f2c46b; --st-reg-bg: #3a2e14;
+  --st-des-fg: #7fd6ec; --st-des-bg: #123540;
+  --st-pag-fg: #82d6a6; --st-pag-bg: #14372a;
+  --danger: #f2a39d; --danger-bg: #42201e;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 860px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 12px; padding-block: 14px 8px; }
+.brand svg { flex: none; }
+.brand h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; letter-spacing: .01em; line-height: 1; text-wrap: balance; }
+.brand p { margin: 2px 0 0; color: var(--muted); font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; }
+.tabs { display: flex; gap: 4px; }
+.tab { flex: 1; border: 0; background: none; padding: 10px 6px 12px; font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; letter-spacing: .02em; color: var(--muted); border-bottom: 3px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tab .badge { font-family: var(--font-body); font-size: .72rem; font-weight: 600; min-width: 20px; padding: 1px 6px; border-radius: 999px; background: var(--paper); color: var(--muted); }
+.tab[aria-selected="true"] .badge { background: var(--accent); color: var(--accent-ink); }
+
+main { display: grid; gap: 18px; padding-block: 18px 48px; }
+.notice { padding: 12px 14px; border-radius: 8px; background: var(--danger-bg); color: var(--danger); }
+
+.filters { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field > span { font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.field input, .field select { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+
+.pipeline { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: stretch; gap: 6px; }
+.stage { border: 0; text-align: left; padding: 10px 12px; border-radius: 10px; cursor: pointer; display: grid; gap: 2px; min-width: 0; }
+.stage small { font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.stage b { font-family: var(--font-display); font-size: 1.7rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.stage span { font-size: .8rem; font-variant-numeric: tabular-nums; }
+.stage.reg { background: var(--st-reg-bg); color: var(--st-reg-fg); }
+.stage.des { background: var(--st-des-bg); color: var(--st-des-fg); }
+.stage.pag { background: var(--st-pag-bg); color: var(--st-pag-fg); }
+.arrow { align-self: center; color: var(--muted); font-size: 1.1rem; }
+
+.view h2 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 1.3rem; letter-spacing: .01em; }
+.view { display: grid; gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 14px; }
+.card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.form-grid { display: grid; grid-template-columns: 1.3fr 1fr .8fr; gap: 10px; }
+.form-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.err { color: var(--danger); font-size: .88rem; }
+
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 9px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.danger { background: var(--danger-bg); border-color: transparent; color: var(--danger); }
+.btn.small { padding: 5px 10px; font-size: .85rem; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+
+.list { list-style: none; margin: 0; padding: 0; display: grid; }
+.row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 11px 2px; border-top: 1px solid var(--line); }
+.row:first-child { border-top: 0; }
+.row.nocheck { grid-template-columns: minmax(0, 1fr) auto; }
+.row input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); margin: 0; }
+label.row { cursor: pointer; }
+.row-main { min-width: 0; display: grid; gap: 2px; }
+.row-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.code { font-family: var(--font-mono); font-weight: 500; font-size: .95rem; overflow-wrap: anywhere; }
+.plaza { color: var(--muted); font-size: .9rem; overflow-wrap: anywhere; }
+.row-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: .85rem; color: var(--muted); }
+.cartones { font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }
+.chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .75rem; font-weight: 600; letter-spacing: .02em; }
+.chip.reg { background: var(--st-reg-bg); color: var(--st-reg-fg); }
+.chip.des { background: var(--st-des-bg); color: var(--st-des-fg); }
+.chip.pag { background: var(--st-pag-bg); color: var(--st-pag-fg); }
+.row-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.confirm { font-size: .85rem; color: var(--danger); align-self: center; }
+.empty { padding: 18px 4px; color: var(--muted); text-align: center; }
+.selall { display: flex; align-items: center; gap: 8px; font-size: .9rem; color: var(--muted); cursor: pointer; }
+.selall input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+.actionbar { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.actionbar .field { flex: 0 1 190px; }
+.actionbar .btn { flex: 1 1 220px; }
+.hint { font-size: .8rem; color: var(--muted); }
+
+.sync { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-size: .88rem; }
+.sync-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
+.sync[data-s="ok"] .sync-dot { background: var(--st-pag-fg); }
+.sync[data-s="busy"] .sync-dot { background: var(--st-reg-fg); }
+.sync[data-s="err"] .sync-dot { background: var(--danger); }
+.sync[data-s="err"] #sync-msg { color: var(--danger); }
+#sync-msg { flex: 1 1 200px; min-width: 0; }
+.sync a { color: var(--accent); font-weight: 600; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--surface); padding: 10px 16px; border-radius: 8px; font-weight: 500; max-width: calc(100% - 32px); z-index: 20; }
+
+@media (max-width: 620px) {
+  .form-grid { grid-template-columns: 1fr 1fr; }
+  .form-grid .f-plaza { grid-column: 1 / -1; }
+  .pipeline { grid-template-columns: 1fr 1fr 1fr; }
+  .arrow { display: none; }
+  .stage b { font-size: 1.4rem; }
+  .row { grid-template-columns: auto minmax(0, 1fr); }
+  .row.nocheck { grid-template-columns: minmax(0, 1fr); }
+  .row .row-actions { grid-column: 1 / -1; justify-content: flex-start; }
+  .row:not(.nocheck) .row-actions { padding-left: 32px; }
+}
+@media (max-width: 380px) { .filters { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: no-preference) { .tab, .btn, .stage { transition: background-color .15s, color .15s, border-color .15s; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap brand">
+    <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+      <circle cx="17" cy="17" r="10" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+      <circle cx="17" cy="17" r="4.5" fill="var(--accent)"/>
+      <path d="M17 1v32M1 17h32" stroke="var(--ink)" stroke-width="1.6"/>
+    </svg>
+    <div>
+      <h1>Control de Lotes</h1>
+      <p>Cartones de raspadita</p>
+    </div>
+  </div>
+  <nav class="wrap tabs" role="tablist" aria-label="Vistas">
+    <button class="tab" role="tab" id="tab-agregar" data-view="agregar" aria-selected="true">Agregar</button>
+    <button class="tab" role="tab" id="tab-despachos" data-view="despachos" aria-selected="false">Despachos <span class="badge" id="badge-desp">0</span></button>
+    <button class="tab" role="tab" id="tab-pagos" data-view="pagos" aria-selected="false">Pagos <span class="badge" id="badge-pago">0</span></button>
+  </nav>
+</header>
+
+<main class="wrap">
+  <div class="notice" id="notice" hidden></div>
+
+  <section class="filters" aria-label="Filtros">
+    <label class="field"><span>Plaza</span>
+      <select id="f-plaza"><option value="">Todas las plazas</option></select>
+    </label>
+    <label class="field"><span>Buscar</span>
+      <input id="f-buscar" type="search" placeholder="Código o plaza" autocomplete="off">
+    </label>
+  </section>
+
+
+  <section class="pipeline" aria-label="Resumen">
+    <button class="stage reg" data-view="despachos"><small>Sin despachar</small><b id="s-reg-n">0</b><span id="s-reg-c">0 cartones</span></button>
+    <span class="arrow" aria-hidden="true">→</span>
+    <button class="stage des" data-view="pagos"><small>Despachado, sin pago</small><b id="s-des-n">0</b><span id="s-des-c">0 cartones</span></button>
+    <span class="arrow" aria-hidden="true">→</span>
+    <button class="stage pag" data-view="pagos"><small>Pagado</small><b id="s-pag-n">0</b><span id="s-pag-c">0 cartones</span></button>
+  </section>
+
+  <!-- AGREGAR -->
+  <section class="view" id="v-agregar" role="tabpanel" aria-labelledby="tab-agregar">
+    <form class="card" id="form-lote" novalidate>
+      <div class="card-head"><h2 id="form-title">Nuevo lote</h2></div>
+      <div class="form-grid">
+        <label class="field f-plaza"><span>Nombre de la plaza</span>
+          <input id="in-plaza" list="dl-plazas" autocomplete="off" placeholder="Ej: Plaza Minorista" required>
+        </label>
+        <label class="field"><span>Código del lote</span>
+          <input id="in-codigo" autocomplete="off" placeholder="Ej: L-2041" required>
+        </label>
+        <label class="field"><span>Cartones</span>
+          <input id="in-cartones" type="number" inputmode="numeric" min="1" step="1" placeholder="0" required>
+        </label>
+      </div>
+      <datalist id="dl-plazas"></datalist>
+      <div class="form-actions">
+        <button class="btn primary" type="submit" id="btn-guardar">Agregar lote</button>
+        <button class="btn" type="button" id="btn-cancelar" hidden>Cancelar edición</button>
+        <span class="err" id="form-err" role="alert"></span>
+      </div>
+    </form>
+    <div class="card">
+      <div class="card-head"><h2>Lotes registrados</h2><span class="hint" id="hint-all"></span></div>
+      <ul class="list" id="list-all"></ul>
+    </div>
+  </section>
+
+  <!-- DESPACHOS -->
+  <section class="view" id="v-despachos" role="tabpanel" aria-labelledby="tab-despachos" hidden>
+    <div class="card">
+      <div class="card-head">
+        <h2>Por despachar</h2>
+        <label class="selall"><input type="checkbox" id="all-desp"> Seleccionar todos</label>
+      </div>
+      <ul class="list" id="list-pdesp"></ul>
+      <div class="actionbar">
+        <label class="field"><span>Fecha de despacho</span><input type="date" id="d-desp"></label>
+        <button class="btn primary" id="btn-desp" disabled>Marcar como despachado</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Despachados</h2><span class="hint">Más recientes primero</span></div>
+      <ul class="list" id="list-desp"></ul>
+    </div>
+  </section>
+
+  <!-- PAGOS -->
+  <section class="view" id="v-pagos" role="tabpanel" aria-labelledby="tab-pagos" hidden>
+    <div class="card">
+      <div class="card-head">
+        <h2>Pendientes de pago</h2>
+        <label class="selall"><input type="checkbox" id="all-pago"> Seleccionar todos</label>
+      </div>
+      <ul class="list" id="list-ppago"></ul>
+      <div class="actionbar">
+        <label class="field"><span>Fecha de pago</span><input type="date" id="d-pago"></label>
+        <button class="btn primary" id="btn-pago" disabled>Marcar como pagado</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Pagados</h2><span class="hint">Más recientes primero</span></div>
+      <ul class="list" id="list-pag"></ul>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const VIEWS = ["agregar", "despachos", "pagos"];
+  const state = {
+    lotes: [], ready: false, view: "agregar",
+    plaza: "", q: "",
+    selDesp: new Set(), selPago: new Set(),
+    editId: null, confirmDel: null, busy: false,
+  };
+  let fs = null, col = null;
+
+  // ---------- helpers ----------
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const num = (n) => Number(n || 0).toLocaleString("es-CO");
+  const cart = (n) => num(n) + (Number(n) === 1 ? " cartón" : " cartones");
+  const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  const fdate = (iso) => { if (!iso) return ""; const [y, m, d] = String(iso).slice(0, 10).split("-"); return d && m && y ? `${d}/${m}/${y}` : ""; };
+  const norm = (s) => String(s || "").trim().toLocaleLowerCase("es");
+  const sum = (arr) => arr.reduce((a, l) => a + (Number(l.cartones) || 0), 0);
+  const byDesc = (k) => (a, b) => String(b[k] || "").localeCompare(String(a[k] || "")) || String(b.fechaRegistro || "").localeCompare(String(a.fechaRegistro || ""));
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $("toast"); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 2600);
+  }
+  function notice(msg) { const n = $("notice"); n.textContent = msg || ""; n.hidden = !msg; }
+  function writeError(e) {
+    const code = e && e.code;
+    if (code === "permission-denied") toast("La base de datos rechazó el cambio. Revisa los datos e inténtalo otra vez.");
+    else if (code === "resource-exhausted") toast("Se alcanzó el límite diario gratis de Firebase. Inténtalo mañana.");
+    else toast("No se pudo guardar. Revisa tu conexión e inténtalo otra vez.");
+  }
+
+  const matches = (l) => (!state.plaza || l.plaza === state.plaza) &&
+    (!state.q || norm(l.codigo).includes(state.q) || norm(l.plaza).includes(state.q));
+  const stage = (l) => (l.pagado ? "pag" : l.despachado ? "des" : "reg");
+  const chip = (l) => {
+    const s = stage(l);
+    const label = s === "pag" ? "Pagado" : s === "des" ? "Despachado" : "Sin despachar";
+    return `<span class="chip ${s}">${label}</span>`;
+  };
+
+  // ---------- cambio de vista ----------
+  function setView(v) {
+    if (!VIEWS.includes(v)) v = "agregar";
+    state.view = v;
+    VIEWS.forEach((name) => {
+      $("v-" + name).hidden = name !== v;
+      $("tab-" + name).setAttribute("aria-selected", String(name === v));
+    });
+    try { localStorage.setItem("lotes.view", v); } catch (e) {}
+  }
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-view]");
+    if (b) { setView(b.dataset.view); window.scrollTo({ top: 0 }); }
+  });
+
+  // ---------- render ----------
+  function rowHTML(l, { check, selSet, meta, actions }) {
+    const main = `
+      <div class="row-main">
+        <div class="row-top"><span class="code">${esc(l.codigo)}</span><span class="plaza">${esc(l.plaza)}</span></div>
+        <div class="row-sub"><span class="cartones">${cart(l.cartones)}</span>${meta || ""}</div>
+      </div>`;
+    const acts = actions ? `<div class="row-actions">${actions}</div>` : "";
+    if (check) {
+      const on = selSet.has(l.id) ? " checked" : "";
+      return `<li><label class="row"><input type="checkbox" data-sel="${check}" data-id="${esc(l.id)}"${on}>${main}${acts}</label></li>`;
+    }
+    return `<li class="row nocheck" data-id="${esc(l.id)}">${main}${acts}</li>`;
+  }
+  function fill(id, items, opts, emptyMsg) {
+    $(id).innerHTML = items.length ? items.map((l) => rowHTML(l, typeof opts === "function" ? opts(l) : opts)).join("") : `<li class="empty">${emptyMsg}</li>`;
+  }
+
+  function render() {
+    const all = state.lotes;
+    const vis = all.filter(matches);
+    const reg = vis.filter((l) => !l.despachado && !l.pagado);
+    const des = vis.filter((l) => l.despachado && !l.pagado);
+    const pag = vis.filter((l) => l.pagado);
+
+    const plazas = [...new Set(all.map((l) => l.plaza).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"));
+    if (state.plaza && !plazas.includes(state.plaza)) state.plaza = "";
+    $("f-plaza").innerHTML = `<option value="">Todas las plazas</option>` + plazas.map((p) => `<option value="${esc(p)}"${p === state.plaza ? " selected" : ""}>${esc(p)}</option>`).join("");
+    $("dl-plazas").innerHTML = plazas.map((p) => `<option value="${esc(p)}"></option>`).join("");
+
+    $("s-reg-n").textContent = num(reg.length); $("s-reg-c").textContent = cart(sum(reg));
+    $("s-des-n").textContent = num(des.length); $("s-des-c").textContent = cart(sum(des));
+    $("s-pag-n").textContent = num(pag.length); $("s-pag-c").textContent = cart(sum(pag));
+    $("badge-desp").textContent = num(reg.length);
+    $("badge-pago").textContent = num(des.length);
+
+    const wait = !state.ready ? "Cargando lotes…" : null;
+    const filtered = state.plaza || state.q;
+
+    $("hint-all").textContent = state.ready ? `${num(vis.length)} ${vis.length === 1 ? "lote" : "lotes"} · ${cart(sum(vis))}` : "";
+    fill("list-all", vis.slice().sort(byDesc("fechaRegistro")), (l) => {
+      let actions;
+      if (state.confirmDel === l.id) {
+        actions = `<span class="confirm">¿Eliminar este lote?</span>
+          <button class="btn small danger" data-act="del-yes" data-id="${esc(l.id)}">Sí, eliminar</button>
+          <button class="btn small" data-act="del-no">No</button>`;
+      } else {
+        actions = `<button class="btn small" data-act="edit" data-id="${esc(l.id)}">Editar</button>
+          <button class="btn small" data-act="del" data-id="${esc(l.id)}">Eliminar</button>`;
+      }
+      const meta = chip(l) + (l.fechaRegistro ? `<span>Registrado ${fdate(l.fechaRegistro)}</span>` : "");
+      return { meta, actions };
+    }, wait || (filtered ? "Ningún lote coincide con el filtro." : "Aún no hay lotes. Agrega el primero con el formulario de arriba."));
+
+    fill("list-pdesp", reg.slice().sort(byDesc("fechaRegistro")), (l) => ({
+      check: "desp", selSet: state.selDesp,
+      meta: l.fechaRegistro ? `<span>Registrado ${fdate(l.fechaRegistro)}</span>` : "",
+    }), wait || (filtered ? "Ningún lote por despachar con este filtro." : "No hay lotes por despachar."));
+    fill("list-desp", vis.filter((l) => l.despachado).sort(byDesc("fechaDespacho")), (l) => ({
+      meta: `<span>Despachado ${fdate(l.fechaDespacho)}</span>` + (l.pagado ? chip(l) : ""),
+      actions: l.pagado ? "" : `<button class="btn small" data-act="undo-desp" data-id="${esc(l.id)}">Deshacer</button>`,
+    }), wait || "Todavía no hay lotes despachados.");
+
+    fill("list-ppago", des.slice().sort(byDesc("fechaDespacho")), (l) => ({
+      check: "pago", selSet: state.selPago,
+      meta: `<span>Despachado ${fdate(l.fechaDespacho)}</span>`,
+    }), wait || (reg.length ? "No hay lotes pendientes de pago. Primero márcalos como despachados." : "No hay lotes pendientes de pago."));
+    fill("list-pag", pag.slice().sort(byDesc("fechaPago")), (l) => ({
+      meta: `<span>Pagado ${fdate(l.fechaPago)}</span><span>Despachado ${fdate(l.fechaDespacho)}</span>`,
+      actions: `<button class="btn small" data-act="undo-pago" data-id="${esc(l.id)}">Deshacer</button>`,
+    }), wait || "Todavía no hay lotes pagados.");
+
+    syncSel("desp", reg, state.selDesp);
+    syncSel("pago", des, state.selPago);
+  }
+
+  function syncSel(kind, list, set) {
+    const ids = new Set(list.map((l) => l.id));
+    [...set].forEach((id) => { if (!ids.has(id)) set.delete(id); });
+    const all = $("all-" + kind);
+    all.checked = list.length > 0 && set.size === list.length;
+    all.indeterminate = set.size > 0 && set.size < list.length;
+    all.disabled = list.length === 0;
+    const btn = $("btn-" + kind);
+    const n = set.size;
+    const base = kind === "desp" ? "Marcar como despachado" : "Marcar como pagado";
+    const c = sum(list.filter((l) => set.has(l.id)));
+    btn.textContent = n ? `${base} (${n} · ${cart(c)})` : base;
+    btn.disabled = !n || !col || state.busy;
+  }
+
+  // ---------- filtros ----------
+  $("f-plaza").addEventListener("change", (e) => { state.plaza = e.target.value; render(); });
+  $("f-buscar").addEventListener("input", (e) => { state.q = norm(e.target.value); render(); });
+
+  // ---------- selección ----------
+  document.addEventListener("change", (e) => {
+    const t = e.target;
+    if (t.dataset && t.dataset.sel) {
+      const set = t.dataset.sel === "desp" ? state.selDesp : state.selPago;
+      t.checked ? set.add(t.dataset.id) : set.delete(t.dataset.id);
+      render();
+    }
+  });
+  function selectAll(kind, checked) {
+    const vis = state.lotes.filter(matches);
+    const list = kind === "desp" ? vis.filter((l) => !l.despachado && !l.pagado) : vis.filter((l) => l.despachado && !l.pagado);
+    const set = kind === "desp" ? state.selDesp : state.selPago;
+    set.clear(); if (checked) list.forEach((l) => set.add(l.id));
+    render();
+  }
+  $("all-desp").addEventListener("change", (e) => selectAll("desp", e.target.checked));
+  $("all-pago").addEventListener("change", (e) => selectAll("pago", e.target.checked));
+
+  // ---------- acciones en grupo ----------
+  async function bulk(kind) {
+    if (!col || state.busy) return;
+    const set = kind === "desp" ? state.selDesp : state.selPago;
+    const ids = [...set];
+    const date = $(kind === "desp" ? "d-desp" : "d-pago").value || today();
+    if (!ids.length) return;
+    const patch = kind === "desp" ? { despachado: true, fechaDespacho: date } : { pagado: true, fechaPago: date };
+    state.busy = true; render();
+    try {
+      const batch = fs.batch();
+      ids.forEach((id) => batch.update(col.doc(id), patch));
+      await batch.commit();
+      set.clear();
+      toast(`${ids.length} ${ids.length === 1 ? "lote marcado" : "lotes marcados"} como ${kind === "desp" ? "despachado" : "pagado"}`);
+    } catch (e) { writeError(e); }
+    state.busy = false; render();
+  }
+  $("btn-desp").addEventListener("click", () => bulk("desp"));
+  $("btn-pago").addEventListener("click", () => bulk("pago"));
+
+  // ---------- acciones por fila ----------
+  document.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-act]");
+    if (!b) return;
+    e.preventDefault();
+    const id = b.dataset.id;
+    const act = b.dataset.act;
+    if (act === "edit") return startEdit(id);
+    if (act === "del") { state.confirmDel = id; return render(); }
+    if (act === "del-no") { state.confirmDel = null; return render(); }
+    if (!col) return;
+    try {
+      if (act === "del-yes") {
+        state.confirmDel = null;
+        if (state.editId === id) resetForm();
+        await col.doc(id).delete(); toast("Lote eliminado");
+      } else if (act === "undo-desp") {
+        await col.doc(id).update({ despachado: false, fechaDespacho: null }); toast("Despacho deshecho");
+      } else if (act === "undo-pago") {
+        await col.doc(id).update({ pagado: false, fechaPago: null }); toast("Pago deshecho");
+      }
+    } catch (err) { writeError(err); }
+    render();
+  });
+
+  // ---------- formulario ----------
+  function startEdit(id) {
+    const l = state.lotes.find((x) => x.id === id);
+    if (!l) return;
+    state.editId = id;
+    $("in-plaza").value = l.plaza || "";
+    $("in-codigo").value = l.codigo || "";
+    $("in-cartones").value = l.cartones || "";
+    $("form-title").textContent = "Editar lote " + (l.codigo || "");
+    $("btn-guardar").textContent = "Guardar cambios";
+    $("btn-cancelar").hidden = false;
+    $("form-err").textContent = "";
+    $("form-lote").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("in-plaza").focus({ preventScroll: true });
+  }
+  function resetForm() {
+    state.editId = null;
+    $("form-lote").reset();
+    $("form-title").textContent = "Nuevo lote";
+    $("btn-guardar").textContent = "Agregar lote";
+    $("btn-cancelar").hidden = true;
+    $("form-err").textContent = "";
+  }
+  $("btn-cancelar").addEventListener("click", resetForm);
+
+  $("form-lote").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const err = $("form-err");
+    const plaza = $("in-plaza").value.trim().replace(/\s+/g, " ");
+    const codigo = $("in-codigo").value.trim().replace(/\s+/g, " ");
+    const cartones = Number($("in-cartones").value);
+    if (!plaza) { err.textContent = "Escribe el nombre de la plaza."; return $("in-plaza").focus(); }
+    if (!codigo) { err.textContent = "Escribe el código del lote."; return $("in-codigo").focus(); }
+    if (!Number.isInteger(cartones) || cartones < 1) { err.textContent = "La cantidad de cartones debe ser un número entero mayor que 0."; return $("in-cartones").focus(); }
+    const dup = state.lotes.find((l) => l.id !== state.editId && norm(l.codigo) === norm(codigo));
+    if (dup) { err.textContent = `Ya existe un lote con el código ${dup.codigo} (${dup.plaza}).`; return $("in-codigo").focus(); }
+    if (!col) { err.textContent = "No hay conexión con la base de datos, así que no se puede guardar."; return; }
+    // Reusa la escritura exacta de una plaza existente para que el filtro las agrupe.
+    const known = state.lotes.find((l) => norm(l.plaza) === norm(plaza));
+    const plazaFinal = known ? known.plaza : plaza;
+    err.textContent = "";
+    const btn = $("btn-guardar"); btn.disabled = true;
+    try {
+      if (state.editId) {
+        await col.doc(state.editId).update({ plaza: plazaFinal, codigo, cartones });
+        toast("Cambios guardados");
+        resetForm();
+      } else {
+        await col.add({ plaza: plazaFinal, codigo, cartones, fechaRegistro: new Date().toISOString(), despachado: false, fechaDespacho: null, pagado: false, fechaPago: null });
+        toast(`Lote ${codigo} agregado`);
+        $("in-codigo").value = ""; $("in-cartones").value = "";
+        $("in-codigo").focus();
+      }
+    } catch (ex) { writeError(ex); }
+    btn.disabled = false;
+  });
+
+  // ---------- inicio ----------
+  $("d-desp").value = today();
+  $("d-pago").value = today();
+  let start = (location.hash || "").slice(1);
+  if (!VIEWS.includes(start)) { try { start = localStorage.getItem("lotes.view") || ""; } catch (e) {} }
+  setView(start);
+  render();
+
+  const cfg = window.FIREBASE_CONFIG;
+  if (typeof firebase === "undefined" || !cfg || !cfg.projectId || /PEGA/.test(cfg.apiKey || "")) {
+    state.ready = true;
+    notice("La app todavía no está conectada a Firebase. Falta completar el archivo firebase-config.js.");
+    render();
+    return;
+  }
+  firebase.initializeApp(cfg);
+  fs = firebase.firestore();
+  col = fs.collection("lotes");
+  col.onSnapshot((snap) => {
+    state.lotes = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    state.ready = true;
+    notice("");
+    render();
+  }, () => {
+    state.ready = true;
+    notice("No se pudo conectar con la base de datos. Revisa tu conexión y recarga la página.");
+    render();
+  });
+})();
+</script>
+</body>
+</html>

@@ -2,34 +2,45 @@
 
 Aplicación web para llevar el control de los lotes de cartones de raspadita que salen de la imprenta: qué lotes se registraron, cuáles se despacharon y cuáles ya se pagaron.
 
+**Enlace:** https://tauroyei.github.io/control-lotes/
+
 ## Vistas
 
 - **Agregar**: registra un lote con el nombre de la plaza, el código del lote y la cantidad de cartones. Permite editar y eliminar lotes.
 - **Despachos**: marca uno o varios lotes como despachados o enviados, con su fecha.
 - **Pagos**: marca como pagados los lotes ya despachados, con la fecha de pago.
 
-En todas las vistas se puede filtrar por plaza y buscar por código. Arriba hay un resumen de lotes y cartones en cada estado: sin despachar → despachado → pagado.
+En todas las vistas se puede filtrar por plaza y buscar por código. Arriba hay un resumen de lotes y cartones en cada estado: sin despachar → despachado → pagado. Los cambios se ven al instante en todos los dispositivos que tengan la app abierta.
 
 ## Cómo funciona
 
-La app es un solo archivo, [`control-lotes.html`](control-lotes.html), publicado como Artifact en claude.ai. Usa dos capacidades de esa plataforma:
+- [`index.html`](index.html): la app completa (HTML, CSS y JavaScript en un solo archivo), publicada con GitHub Pages.
+- [`firebase-config.js`](firebase-config.js): datos públicos del proyecto de Firebase.
+- [`firestore.rules`](firestore.rules): reglas de seguridad de la base de datos.
 
-- **`db`**: base de datos del artifact. Los lotes se guardan en la colección `lotes`.
-- **`mcp`** con el conector de Google Sheets: después de cada cambio, la lista completa se copia a una hoja de cálculo.
+Los lotes se guardan en **Cloud Firestore** (Firebase), en la colección `lotes`. Cada documento tiene:
 
-Por eso el archivo solo funciona abierto desde claude.ai. Abierto directamente en un navegador o en GitHub Pages se ve la interfaz, pero no guarda datos.
+| Campo | Tipo | Ejemplo |
+|---|---|---|
+| `plaza` | texto | `LA SUERTE` |
+| `codigo` | texto | `09` |
+| `cartones` | número entero | `12000` |
+| `fechaRegistro` | texto ISO | `2026-10-28T21:48:29.842Z` |
+| `despachado` | sí/no | `true` |
+| `fechaDespacho` | texto `aaaa-mm-dd` o vacío | `2026-10-28` |
+| `pagado` | sí/no | `false` |
+| `fechaPago` | texto `aaaa-mm-dd` o vacío | `null` |
 
-## Configuración de Google Sheets
+## Seguridad
 
-El ID de la hoja de cálculo **no está en el código**. La app lo lee de la base de datos del artifact, en el documento `config/sheets`:
+La configuración de `firebase-config.js` no es secreta: Firebase la necesita en la página para conectarse. La protección la dan las reglas de [`firestore.rules`](firestore.rules):
 
-```json
-{ "spreadsheetId": "ID_DE_TU_HOJA" }
-```
+- Cualquier persona con el enlace puede ver, agregar, cambiar y eliminar lotes.
+- Solo se aceptan lotes con los campos de arriba y valores válidos.
+- Cualquier otra colección está cerrada.
 
-La hoja debe tener una pestaña llamada `Lotes` con estos encabezados en la fila 1:
+Si cambias las reglas en este archivo, cópialas también en la consola de Firebase: **Firestore Database → Reglas → Publicar**.
 
-| Plaza | Código del lote | Cartones | Fecha de registro | Estado | Fecha de despacho | Fecha de pago |
-|---|---|---|---|---|---|---|
+## Versión anterior
 
-La base de datos es la fuente principal: cada sincronización reescribe la hoja con todos los lotes, así que los cambios hechos a mano en la hoja se pierden.
+[`control-lotes.html`](control-lotes.html) es la primera versión, hecha como Artifact de claude.ai. Ya no se usa.
