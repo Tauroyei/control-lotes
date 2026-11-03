@@ -4,13 +4,31 @@ Aplicación web para llevar el control de los lotes de cartones de raspadita que
 
 **Enlace:** https://tauroyei.github.io/control-lotes/
 
+## Usuarios y acceso
+
+Para usar la app hay que iniciar sesión con usuario y contraseña. Los usuarios se manejan desde la misma app:
+
+- **Configuración inicial**: la primera vez que se abre la app pide crear el usuario administrador. Este paso se hace una sola vez.
+- **Usuarios** (solo administradores): crear usuarios nuevos con su contraseña y rol, cambiar el rol y desactivar o volver a activar a alguien. Un usuario desactivado sale de la app al instante.
+- **Contraseña**: cada persona puede cambiar la suya con el botón *Contraseña* de arriba. Si alguien olvida su contraseña, el administrador lo desactiva y le crea un usuario nuevo.
+
+Hay dos roles:
+
+| Rol | Puede |
+|---|---|
+| Administrador | Todo: agregar, editar y eliminar lotes, despachos, pagos, plazas y usuarios. |
+| Operador | Agregar lotes, marcar o deshacer despachos y ver los enviados. |
+
 ## Vistas
 
-- **Agregar**: registra un lote con el nombre de la plaza, el código del lote y la cantidad de cartones. Permite editar y eliminar lotes.
+- **Agregar**: registra un lote eligiendo la plaza de la lista, con el código del lote y la cantidad de cartones.
 - **Despachos**: marca uno o varios lotes como despachados o enviados, con su fecha.
-- **Pagos**: marca como pagados los lotes ya despachados, con la fecha de pago.
+- **Enviados**: revisa los lotes despachados en un rango de fechas, con un indicador de cuántos lotes y cartones se enviaron por plaza.
+- **Pagos** (administrador): marca como pagados los lotes ya despachados, con la fecha de pago.
+- **Plazas** (administrador): crea, renombra y elimina plazas. Al renombrar una plaza también se actualizan sus lotes.
+- **Usuarios** (administrador): ver arriba.
 
-En todas las vistas se puede filtrar por plaza y buscar por código. Arriba hay un resumen de lotes y cartones en cada estado: sin despachar → despachado → pagado. Los cambios se ven al instante en todos los dispositivos que tengan la app abierta.
+En todas las vistas se puede filtrar por plaza y buscar por código. El botón **Descargar Excel** baja los lotes del filtro actual, con una hoja de resumen por plaza. Los cambios se ven al instante en todos los dispositivos que tengan la app abierta.
 
 ## Cómo funciona
 
@@ -18,7 +36,12 @@ En todas las vistas se puede filtrar por plaza y buscar por código. Arriba hay 
 - [`firebase-config.js`](firebase-config.js): datos públicos del proyecto de Firebase.
 - [`firestore.rules`](firestore.rules): reglas de seguridad de la base de datos.
 
-Los lotes se guardan en **Cloud Firestore** (Firebase), en la colección `lotes`. Cada documento tiene:
+El inicio de sesión usa **Firebase Authentication** (correo y contraseña; el usuario `ana` se guarda como `ana@lotes.app`). Los datos se guardan en **Cloud Firestore**:
+
+- `usuarios/{uid}`: `usuario`, `rol` (`admin` u `operador`), `activo`, `creadoEn`.
+- `config/setup`: marca que ya se creó el primer administrador.
+- `plazas`: `nombre`, `creadaEn`.
+- `lotes`: un documento por lote:
 
 | Campo | Tipo | Ejemplo |
 |---|---|---|
@@ -30,16 +53,19 @@ Los lotes se guardan en **Cloud Firestore** (Firebase), en la colección `lotes`
 | `fechaDespacho` | texto `aaaa-mm-dd` o vacío | `2026-10-28` |
 | `pagado` | sí/no | `false` |
 | `fechaPago` | texto `aaaa-mm-dd` o vacío | `null` |
+| `creadoPor` | texto (opcional) | `ana` |
 
 ## Seguridad
 
 La configuración de `firebase-config.js` no es secreta: Firebase la necesita en la página para conectarse. La protección la dan las reglas de [`firestore.rules`](firestore.rules):
 
-- Cualquier persona con el enlace puede ver, agregar, cambiar y eliminar lotes.
-- Solo se aceptan lotes con los campos de arriba y valores válidos.
-- Cualquier otra colección está cerrada.
+- Sin sesión iniciada no se puede ver ni cambiar nada.
+- Solo entra quien tiene un perfil activo en `usuarios`.
+- Solo un administrador puede crear o cambiar usuarios, plazas y pagos, y eliminar lotes. Nadie puede cambiar su propio rol ni desactivarse a sí mismo.
+- Un operador solo puede agregar lotes nuevos y marcar o deshacer el despacho de lotes sin pagar.
+- Solo se aceptan datos con los campos de arriba y valores válidos. Cualquier otra colección está cerrada.
 
-Si cambias las reglas en este archivo, cópialas también en la consola de Firebase: **Firestore Database → Reglas → Publicar**.
+Para que funcione, en la consola de Firebase debe estar activado **Authentication → Método de acceso → Correo electrónico/contraseña**. Si cambias las reglas en este archivo, cópialas también en **Firestore Database → Reglas → Publicar**.
 
 ## Versión anterior
 

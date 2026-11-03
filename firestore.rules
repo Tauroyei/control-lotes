@@ -5,33 +5,62 @@ service cloud.firestore {
     function conSesion() {
       return request.auth != null;
     }
-    // Un usuario es administrador si existe el documento admins/{su UID}.
-    // Esos documentos solo se crean desde la consola de Firebase.
+    function rutaUsuario(uid) {
+      return /databases/$(database)/documents/usuarios/$(uid);
+    }
+    function rutaSetup() {
+      return /databases/$(database)/documents/config/setup;
+    }
+    // Solo entra quien tiene un perfil en usuarios/{uid} marcado como activo.
+    function activo() {
+      return conSesion() && exists(rutaUsuario(request.auth.uid))
+        && get(rutaUsuario(request.auth.uid)).data.activo == true;
+    }
     function esAdmin() {
-      return conSesion() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return activo() && get(rutaUsuario(request.auth.uid)).data.rol == 'admin';
     }
 
-    match /admins/{uid} {
-      allow read: if conSesion() && request.auth.uid == uid;
-      allow write: if false;
+    // Marca que ya se creó el primer administrador. Se crea una sola vez, junto con su perfil.
+    match /config/setup {
+      allow get: if true;
+      allow create: if conSesion() && !exists(rutaSetup())
+        && getAfter(rutaUsuario(request.auth.uid)).data.rol == 'admin'
+        && request.resource.data.keys().hasOnly(['creadoEn']);
+      allow update, delete: if false;
+    }
+
+    match /usuarios/{uid} {
+      allow get: if conSesion() && (request.auth.uid == uid || esAdmin());
+      allow list: if esAdmin();
+      allow create: if usuarioValido(request.resource.data) && (
+        // Un administrador crea usuarios para otras personas.
+        (esAdmin() && uid != request.auth.uid) ||
+        // Configuración inicial: el primer usuario se crea a sí mismo como administrador.
+        (conSesion() && request.auth.uid == uid && !exists(rutaSetup()) && existsAfter(rutaSetup())
+          && request.resource.data.rol == 'admin' && request.resource.data.activo == true)
+      );
+      // El administrador cambia rol y estado de los demás (no el suyo, para no quedarse sin acceso).
+      allow update: if esAdmin() && uid != request.auth.uid && usuarioValido(request.resource.data)
+        && request.resource.data.usuario == resource.data.usuario;
+      allow delete: if false;
     }
 
     match /plazas/{plazaId} {
-      allow read: if conSesion();
+      allow read: if activo();
       allow create, update: if esAdmin() && plazaValida(request.resource.data);
       allow delete: if esAdmin();
     }
 
     match /lotes/{loteId} {
-      allow read: if conSesion();
+      allow read: if activo();
       // Todo lote nuevo entra sin despachar y sin pagar.
-      allow create: if conSesion() && loteValido(request.resource.data)
+      allow create: if activo() && loteValido(request.resource.data)
         && request.resource.data.despachado == false && request.resource.data.fechaDespacho == null
         && request.resource.data.pagado == false && request.resource.data.fechaPago == null;
       // El administrador cambia cualquier dato; un operador solo marca o deshace el despacho de un lote sin pagar.
       allow update: if loteValido(request.resource.data) && (
         esAdmin() ||
-        (conSesion() && resource.data.pagado == false && request.resource.data.pagado == false
+        (activo() && resource.data.pagado == false && request.resource.data.pagado == false
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['despachado', 'fechaDespacho']))
       );
       allow delete: if esAdmin();
@@ -41,6 +70,14 @@ service cloud.firestore {
     match /{document=**} {
       allow read, write: if false;
     }
+  }
+
+  function usuarioValido(d) {
+    return d.keys().hasOnly(['usuario', 'rol', 'activo', 'creadoEn'])
+      && d.usuario is string && d.usuario.matches('^[a-z0-9._-]{3,30}$')
+      && d.rol in ['admin', 'operador']
+      && d.activo is bool
+      && (!('creadoEn' in d) || (d.creadoEn is string && d.creadoEn.size() <= 40));
   }
 
   function plazaValida(d) {

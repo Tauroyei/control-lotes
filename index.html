@@ -62,6 +62,11 @@ button, input, select { font: inherit; color: inherit; }
 .login-card .brand { padding: 0; }
 .login-card .btn { width: 100%; padding-block: 11px; }
 .login-help { font-size: .85rem; color: var(--muted); margin: 0; }
+.login-card h2 { margin: 0 0 4px; font-family: var(--font-display); font-weight: 600; font-size: 1.3rem; }
+.trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.chip.rol-admin { background: var(--accent); color: var(--accent-ink); }
+.chip.rol-op { background: var(--paper); color: var(--muted); border: 1px solid var(--line); }
+.chip.off { background: var(--danger-bg); color: var(--danger); }
 
 /* ---------- header ---------- */
 .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
@@ -173,6 +178,7 @@ label.row { cursor: pointer; }
   .row .row-actions { grid-column: 1 / -1; justify-content: flex-start; }
   .row:not(.nocheck) .row-actions { padding-left: 32px; }
   .brand-row { flex-wrap: wrap; }
+  .trio { grid-template-columns: 1fr; }
 }
 @media (max-width: 380px) { .filters { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: no-preference) { .tab, .btn, .stage { transition: background-color .15s, color .15s, border-color .15s; } }
@@ -204,7 +210,39 @@ label.row { cursor: pointer; }
     </label>
     <button class="btn primary" type="submit" id="btn-login">Entrar</button>
     <span class="err" id="login-err" role="alert"></span>
-    <p class="login-help">Si olvidaste tu contraseña, pídele al administrador que te asigne una nueva.</p>
+    <p class="login-help">Si olvidaste tu contraseña, pídele al administrador que te cree un usuario nuevo.</p>
+  </form>
+</div>
+
+<!-- ============ CONFIGURACIÓN INICIAL ============ -->
+<div class="login wrap" id="setup" hidden>
+  <form class="login-card" id="form-setup" novalidate>
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+        <circle cx="17" cy="17" r="10" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+        <circle cx="17" cy="17" r="4.5" fill="var(--accent)"/>
+        <path d="M17 1v32M1 17h32" stroke="var(--ink)" stroke-width="1.6"/>
+      </svg>
+      <div>
+        <h1>Control de Lotes</h1>
+        <p>Cartones de raspadita</p>
+      </div>
+    </div>
+    <div>
+      <h2>Configuración inicial</h2>
+      <p class="login-help">Crea el usuario administrador. Este paso se hace una sola vez; después los demás usuarios se crean desde la pestaña Usuarios.</p>
+    </div>
+    <label class="field"><span>Usuario</span>
+      <input id="su-user" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Ej: yeison">
+    </label>
+    <label class="field"><span>Contraseña</span>
+      <input id="su-pass" type="password" autocomplete="new-password">
+    </label>
+    <label class="field"><span>Repite la contraseña</span>
+      <input id="su-pass2" type="password" autocomplete="new-password">
+    </label>
+    <button class="btn primary" type="submit" id="btn-setup">Crear administrador</button>
+    <span class="err" id="setup-err" role="alert"></span>
   </form>
 </div>
 
@@ -226,6 +264,7 @@ label.row { cursor: pointer; }
     <div class="userbox">
       <span class="who" id="user-name"></span>
       <span class="role" id="user-role"></span>
+      <button class="btn small" type="button" id="btn-pass">Contraseña</button>
       <button class="btn small" type="button" id="btn-logout">Salir</button>
     </div>
   </div>
@@ -235,11 +274,26 @@ label.row { cursor: pointer; }
     <button class="tab" role="tab" id="tab-enviados" data-view="enviados" aria-selected="false">Enviados</button>
     <button class="tab" role="tab" id="tab-pagos" data-view="pagos" aria-selected="false" data-admin>Pagos <span class="badge" id="badge-pago">0</span></button>
     <button class="tab" role="tab" id="tab-plazas" data-view="plazas" aria-selected="false" data-admin>Plazas</button>
+    <button class="tab" role="tab" id="tab-usuarios" data-view="usuarios" aria-selected="false" data-admin>Usuarios</button>
   </nav>
 </header>
 
 <main class="wrap">
   <div class="notice" id="notice" hidden></div>
+
+  <form class="card" id="form-pass" hidden novalidate>
+    <div class="card-head"><h2>Cambiar mi contraseña</h2></div>
+    <div class="trio">
+      <label class="field"><span>Contraseña actual</span><input id="pw-actual" type="password" autocomplete="current-password"></label>
+      <label class="field"><span>Nueva contraseña</span><input id="pw-nueva" type="password" autocomplete="new-password"></label>
+      <label class="field"><span>Repite la nueva</span><input id="pw-nueva2" type="password" autocomplete="new-password"></label>
+    </div>
+    <div class="form-actions">
+      <button class="btn primary" type="submit" id="btn-pw">Guardar contraseña</button>
+      <button class="btn" type="button" id="btn-pw-cancel">Cancelar</button>
+      <span class="err" id="pw-err" role="alert"></span>
+    </div>
+  </form>
 
   <section class="filters" aria-label="Filtros">
     <label class="field"><span>Plaza</span>
@@ -366,6 +420,37 @@ label.row { cursor: pointer; }
       <ul class="list" id="list-plazas"></ul>
     </div>
   </section>
+
+  <!-- USUARIOS (admin) -->
+  <section class="view" id="v-usuarios" role="tabpanel" aria-labelledby="tab-usuarios" hidden>
+    <form class="card" id="form-usuario" novalidate>
+      <div class="card-head"><h2>Nuevo usuario</h2></div>
+      <div class="trio">
+        <label class="field"><span>Usuario</span>
+          <input id="nu-user" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ej: juan" maxlength="30">
+        </label>
+        <label class="field"><span>Contraseña</span>
+          <input id="nu-pass" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+        </label>
+        <label class="field"><span>Rol</span>
+          <select id="nu-rol">
+            <option value="operador">Operador</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </label>
+      </div>
+      <p class="hint">El usuario solo puede tener letras minúsculas, números, punto, guion o guion bajo (3 a 30 caracteres). Entrégale el usuario y la contraseña a la persona en privado.</p>
+      <div class="form-actions">
+        <button class="btn primary" type="submit" id="btn-nu">Crear usuario</button>
+        <span class="err" id="nu-err" role="alert"></span>
+      </div>
+    </form>
+    <div class="card">
+      <div class="card-head"><h2>Usuarios</h2><span class="hint" id="hint-usuarios"></span></div>
+      <ul class="list" id="list-usuarios"></ul>
+      <p class="hint">Un usuario desactivado ya no puede entrar. Si alguien olvida su contraseña, desactívalo y créale un usuario nuevo con otro nombre.</p>
+    </div>
+  </section>
 </main>
 </div>
 
@@ -381,19 +466,21 @@ label.row { cursor: pointer; }
   const $ = (id) => document.getElementById(id);
   // Los usuarios se crean en Firebase con este dominio: juan → juan@lotes.app
   const USER_DOMAIN = "lotes.app";
-  const ALL_VIEWS = ["agregar", "despachos", "enviados", "pagos", "plazas"];
-  const ADMIN_VIEWS = ["pagos", "plazas"];
+  const ALL_VIEWS = ["agregar", "despachos", "enviados", "pagos", "plazas", "usuarios"];
+  const ADMIN_VIEWS = ["pagos", "plazas", "usuarios"];
+  const USER_RE = /^[a-z0-9._-]{3,30}$/;
   const state = {
     user: null, userName: "", admin: false,
-    lotes: [], plazas: [], ready: false, view: "agregar",
+    lotes: [], plazas: [], usuarios: [], ready: false, view: "agregar",
     plaza: "", q: "",
     selDesp: new Set(), selPago: new Set(),
     editId: null, confirmDel: null, busy: false,
     plazaEdit: null, plazaDel: null,
     envDesde: "", envHasta: "",
   };
-  let fs = null, auth = null, colLotes = null, colPlazas = null;
-  let unsubs = [];
+  let fs = null, auth = null, colLotes = null, colPlazas = null, colUsuarios = null, cfg = null;
+  let unsubs = [], unsubUsuarios = null;
+  let setupDone = true, setupInProgress = false, loginMsg = "";
 
   // ---------- helpers ----------
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -527,6 +614,7 @@ label.row { cursor: pointer; }
         actions: `<button class="btn small" data-act="undo-pago" data-id="${esc(l.id)}">Deshacer</button>`,
       }), wait || "Todavía no hay lotes pagados.");
       renderPlazas();
+      renderUsuarios();
     }
 
     syncSel("desp", reg, state.selDesp);
@@ -695,6 +783,114 @@ label.row { cursor: pointer; }
   $("list-plazas").addEventListener("keydown", (e) => {
     if (e.target.id === "in-renombrar" && e.key === "Enter") { e.preventDefault(); const b = document.querySelector('[data-pact="ren-yes"]'); if (b) b.click(); }
     if (e.target.id === "in-renombrar" && e.key === "Escape") { state.plazaEdit = null; render(); }
+  });
+
+  // ---------- Usuarios (admin) ----------
+  function renderUsuarios() {
+    const us = state.usuarios.slice().sort((a, b) => (b.activo === true) - (a.activo === true) || byName(a.usuario || "", b.usuario || ""));
+    const activos = us.filter((u) => u.activo === true).length;
+    $("hint-usuarios").textContent = us.length ? `${num(activos)} ${activos === 1 ? "activo" : "activos"} de ${num(us.length)}` : "";
+    $("list-usuarios").innerHTML = us.length ? us.map((u) => {
+      const yo = state.user && u.id === state.user.uid;
+      const rol = u.rol === "admin" ? `<span class="chip rol-admin">Administrador</span>` : `<span class="chip rol-op">Operador</span>`;
+      const estado = u.activo === true ? "" : `<span class="chip off">Desactivado</span>`;
+      const actions = yo ? `<span class="hint">Eres tú</span>` : `
+        <button class="btn small" data-uact="rol" data-id="${esc(u.id)}">${u.rol === "admin" ? "Hacer operador" : "Hacer administrador"}</button>
+        <button class="btn small${u.activo === true ? " danger" : ""}" data-uact="activo" data-id="${esc(u.id)}">${u.activo === true ? "Desactivar" : "Activar"}</button>`;
+      return `<li class="row nocheck"><div class="row-main"><div class="row-top"><span class="code">${esc(u.usuario)}</span></div>
+        <div class="row-sub">${rol}${estado}${u.creadoEn ? `<span>Creado ${fdate(u.creadoEn)}</span>` : ""}</div></div>
+        <div class="row-actions">${actions}</div></li>`;
+    }).join("") : `<li class="empty">Cargando usuarios…</li>`;
+  }
+
+  $("list-usuarios").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-uact]");
+    if (!b) return;
+    const u = state.usuarios.find((x) => x.id === b.dataset.id);
+    if (!u || (state.user && u.id === state.user.uid)) return;
+    b.disabled = true;
+    try {
+      if (b.dataset.uact === "rol") {
+        const rol = u.rol === "admin" ? "operador" : "admin";
+        await colUsuarios.doc(u.id).update({ rol });
+        toast(`${u.usuario} ahora es ${rol === "admin" ? "administrador" : "operador"}`);
+      } else {
+        const activo = u.activo !== true;
+        await colUsuarios.doc(u.id).update({ activo });
+        toast(`${u.usuario} ${activo ? "activado" : "desactivado"}`);
+      }
+    } catch (ex) { writeError(ex); }
+    b.disabled = false;
+  });
+
+  // Crea la cuenta con una segunda instancia de Firebase para que el administrador no pierda su sesión.
+  function authSecundaria() {
+    const app = firebase.apps.find((a) => a.name === "secundaria") || firebase.initializeApp(cfg, "secundaria");
+    return app.auth();
+  }
+
+  $("form-usuario").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const err = $("nu-err");
+    const usuario = $("nu-user").value.trim().toLowerCase();
+    const pass = $("nu-pass").value;
+    const rol = $("nu-rol").value === "admin" ? "admin" : "operador";
+    if (!USER_RE.test(usuario)) { err.textContent = "El usuario debe tener de 3 a 30 caracteres: letras minúsculas, números, punto, guion o guion bajo."; return $("nu-user").focus(); }
+    if (state.usuarios.some((u) => u.usuario === usuario)) { err.textContent = "Ese usuario ya existe."; return $("nu-user").focus(); }
+    if (pass.length < 6) { err.textContent = "La contraseña debe tener al menos 6 caracteres."; return $("nu-pass").focus(); }
+    err.textContent = "";
+    const btn = $("btn-nu"); btn.disabled = true; btn.textContent = "Creando…";
+    const sec = authSecundaria();
+    let nuevo = null;
+    try {
+      nuevo = (await sec.createUserWithEmailAndPassword(toEmail(usuario), pass)).user;
+      await colUsuarios.doc(nuevo.uid).set({ usuario, rol, activo: true, creadoEn: new Date().toISOString() });
+      $("nu-user").value = ""; $("nu-pass").value = ""; $("nu-rol").value = "operador";
+      toast(`Usuario ${usuario} creado`);
+    } catch (ex) {
+      const c = ex && ex.code;
+      if (nuevo) { try { await nuevo.delete(); } catch (x) {} }
+      if (c === "auth/email-already-in-use") err.textContent = "Ese usuario ya existe.";
+      else if (c === "auth/weak-password") err.textContent = "La contraseña debe tener al menos 6 caracteres.";
+      else if (c === "auth/operation-not-allowed") err.textContent = "El inicio de sesión con contraseña no está activado en Firebase.";
+      else if (c === "permission-denied") err.textContent = "No tienes permiso para crear usuarios.";
+      else err.textContent = "No se pudo crear el usuario. Inténtalo otra vez.";
+    }
+    try { await sec.signOut(); } catch (x) {}
+    btn.disabled = false; btn.textContent = "Crear usuario";
+  });
+
+  // ---------- Cambiar mi contraseña ----------
+  function togglePass(show) {
+    $("form-pass").hidden = !show;
+    $("pw-err").textContent = "";
+    ["pw-actual", "pw-nueva", "pw-nueva2"].forEach((id) => ($(id).value = ""));
+    if (show) { window.scrollTo({ top: 0 }); $("pw-actual").focus(); }
+  }
+  $("btn-pass").addEventListener("click", () => togglePass($("form-pass").hidden));
+  $("btn-pw-cancel").addEventListener("click", () => togglePass(false));
+  $("form-pass").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const err = $("pw-err");
+    const actual = $("pw-actual").value, nueva = $("pw-nueva").value, nueva2 = $("pw-nueva2").value;
+    if (!actual) { err.textContent = "Escribe tu contraseña actual."; return $("pw-actual").focus(); }
+    if (nueva.length < 6) { err.textContent = "La nueva contraseña debe tener al menos 6 caracteres."; return $("pw-nueva").focus(); }
+    if (nueva !== nueva2) { err.textContent = "Las contraseñas nuevas no coinciden."; return $("pw-nueva2").focus(); }
+    const btn = $("btn-pw"); btn.disabled = true;
+    try {
+      const user = auth.currentUser;
+      await user.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(user.email, actual));
+      await user.updatePassword(nueva);
+      togglePass(false);
+      toast("Contraseña cambiada");
+    } catch (ex) {
+      const c = ex && ex.code;
+      if (c === "auth/invalid-credential" || c === "auth/wrong-password") err.textContent = "La contraseña actual no es correcta.";
+      else if (c === "auth/weak-password") err.textContent = "La nueva contraseña es muy débil. Usa al menos 6 caracteres.";
+      else if (c === "auth/too-many-requests") err.textContent = "Demasiados intentos. Espera unos minutos.";
+      else err.textContent = "No se pudo cambiar la contraseña. Inténtalo otra vez.";
+    }
+    btn.disabled = false;
   });
 
   // ---------- selección ----------
@@ -873,9 +1069,7 @@ label.row { cursor: pointer; }
 
   // ---------- login ----------
   function showScreen(which) {
-    $("boot").hidden = which !== "boot";
-    $("login").hidden = which !== "login";
-    $("app").hidden = which !== "app";
+    ["boot", "login", "setup", "app"].forEach((s) => ($(s).hidden = which !== s));
   }
   const toEmail = (u) => { u = String(u || "").trim().toLowerCase(); return u.includes("@") ? u : `${u}@${USER_DOMAIN}`; };
   const toUserName = (email) => String(email || "").replace(new RegExp("@" + USER_DOMAIN.replace(/\./g, "\\.") + "$"), "");
@@ -906,13 +1100,85 @@ label.row { cursor: pointer; }
   });
   $("btn-logout").addEventListener("click", () => auth && auth.signOut());
 
-  function stopData() { unsubs.forEach((u) => u()); unsubs = []; }
+  // ---------- configuración inicial: crea el primer administrador ----------
+  $("form-setup").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const err = $("setup-err");
+    const usuario = $("su-user").value.trim().toLowerCase();
+    const pass = $("su-pass").value, pass2 = $("su-pass2").value;
+    if (!USER_RE.test(usuario)) { err.textContent = "El usuario debe tener de 3 a 30 caracteres: letras minúsculas, números, punto, guion o guion bajo."; return $("su-user").focus(); }
+    if (pass.length < 6) { err.textContent = "La contraseña debe tener al menos 6 caracteres."; return $("su-pass").focus(); }
+    if (pass !== pass2) { err.textContent = "Las contraseñas no coinciden."; return $("su-pass2").focus(); }
+    err.textContent = "";
+    const btn = $("btn-setup"); btn.disabled = true; btn.textContent = "Creando…";
+    setupInProgress = true;
+    let nuevo = null;
+    try {
+      nuevo = (await auth.createUserWithEmailAndPassword(toEmail(usuario), pass)).user;
+      const batch = fs.batch();
+      batch.set(colUsuarios.doc(nuevo.uid), { usuario, rol: "admin", activo: true, creadoEn: new Date().toISOString() });
+      batch.set(fs.doc("config/setup"), { creadoEn: new Date().toISOString() });
+      await batch.commit();
+      setupDone = true;
+      setupInProgress = false;
+      ["su-user", "su-pass", "su-pass2"].forEach((id) => ($(id).value = ""));
+      startData(nuevo);
+      toast(`Bienvenido, ${usuario}. Ya eres administrador.`);
+    } catch (ex) {
+      setupInProgress = false;
+      const c = ex && ex.code;
+      if (nuevo) { try { await nuevo.delete(); } catch (x) {} }
+      if (c === "auth/operation-not-allowed") err.textContent = "Primero activa el inicio de sesión con correo y contraseña en Firebase (Authentication → Método de acceso).";
+      else if (c === "auth/email-already-in-use") err.textContent = "Ese usuario ya existe. Elige otro nombre.";
+      else if (c === "auth/weak-password") err.textContent = "La contraseña debe tener al menos 6 caracteres.";
+      else if (c === "permission-denied") err.textContent = "Ya existe un administrador. Recarga la página para iniciar sesión.";
+      else if (c === "auth/network-request-failed") err.textContent = "Sin conexión. Revisa tu internet.";
+      else err.textContent = "No se pudo crear el administrador. Inténtalo otra vez.";
+      if (auth.currentUser) { try { await auth.signOut(); } catch (x) {} }
+    }
+    btn.disabled = false; btn.textContent = "Crear administrador";
+  });
 
-  async function startData(user) {
+  function stopData() {
+    unsubs.forEach((u) => u()); unsubs = [];
+    if (unsubUsuarios) { unsubUsuarios(); unsubUsuarios = null; }
+  }
+  function watchUsuarios(on) {
+    if (on && !unsubUsuarios) {
+      unsubUsuarios = colUsuarios.onSnapshot((snap) => {
+        state.usuarios = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        render();
+      }, () => {});
+    } else if (!on && unsubUsuarios) { unsubUsuarios(); unsubUsuarios = null; state.usuarios = []; }
+  }
+
+  // El perfil (usuarios/{uid}) decide si la persona puede entrar y con qué rol; se escucha en vivo
+  // para que un cambio de rol o una desactivación se apliquen sin recargar.
+  function startData(user) {
+    stopData();
     state.user = user;
     state.userName = toUserName(user.email);
-    state.admin = false; state.ready = false; state.lotes = []; state.plazas = [];
-    try { state.admin = (await fs.doc("admins/" + user.uid).get()).exists; } catch (e) { state.admin = false; }
+    state.admin = false; state.ready = false; state.lotes = []; state.plazas = []; state.usuarios = [];
+    let opened = false;
+    unsubs.push(fs.doc("usuarios/" + user.uid).onSnapshot((d) => {
+      const p = d.exists ? d.data() : null;
+      if (!p || p.activo !== true) {
+        loginMsg = p ? "Tu usuario está desactivado. Habla con el administrador." : "Tu usuario no tiene acceso a la app. Habla con el administrador.";
+        auth.signOut();
+        return;
+      }
+      state.admin = p.rol === "admin";
+      state.userName = p.usuario || state.userName;
+      watchUsuarios(state.admin);
+      if (!opened) { opened = true; openApp(); }
+      else { setView(state.view); render(); }
+    }, () => {
+      loginMsg = "No se pudo verificar tu usuario. Revisa tu conexión e inténtalo otra vez.";
+      auth.signOut();
+    }));
+  }
+
+  function openApp() {
     let start = (location.hash || "").slice(1);
     if (!ALL_VIEWS.includes(start)) { try { start = localStorage.getItem("lotes.view") || ""; } catch (e) {} }
     setView(start);
@@ -927,7 +1193,7 @@ label.row { cursor: pointer; }
     unsubs.push(colPlazas.onSnapshot((snap) => {
       state.plazas = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.nombre);
       gotPlazas = true; done();
-    }, () => { gotPlazas = true; notice("No se pudieron cargar las plazas. Revisa que las reglas de Firebase estén actualizadas."); done(); }));
+    }, () => { gotPlazas = true; notice("No se pudieron cargar las plazas. Revisa tu conexión y recarga la página."); done(); }));
   }
 
   // ---------- inicio ----------
@@ -935,7 +1201,7 @@ label.row { cursor: pointer; }
   $("d-pago").value = today();
   setRango("mes");
 
-  const cfg = window.FIREBASE_CONFIG;
+  cfg = window.FIREBASE_CONFIG;
   if (typeof firebase === "undefined" || !cfg || !cfg.projectId || /PEGA/.test(cfg.apiKey || "")) {
     showScreen("login");
     $("login-err").textContent = "La app todavía no está conectada a Firebase.";
@@ -946,16 +1212,24 @@ label.row { cursor: pointer; }
   fs = firebase.firestore();
   colLotes = fs.collection("lotes");
   colPlazas = fs.collection("plazas");
-  auth.onAuthStateChanged((user) => {
-    stopData();
-    if (user) startData(user);
-    else {
-      state.user = null; state.lotes = []; state.plazas = []; state.admin = false;
-      state.selDesp.clear(); state.selPago.clear(); resetForm();
+  colUsuarios = fs.collection("usuarios");
+
+  (async () => {
+    // ¿Ya se creó el primer administrador? Si no, se muestra la configuración inicial.
+    try { setupDone = (await fs.doc("config/setup").get()).exists; }
+    catch (e) { setupDone = true; }
+    auth.onAuthStateChanged((user) => {
+      if (setupInProgress) return;
+      if (user) { startData(user); return; }
+      stopData();
+      state.user = null; state.lotes = []; state.plazas = []; state.usuarios = []; state.admin = false;
+      state.selDesp.clear(); state.selPago.clear(); resetForm(); togglePass(false);
+      if (!setupDone) { showScreen("setup"); setTimeout(() => $("su-user").focus(), 0); return; }
       showScreen("login");
+      $("login-err").textContent = loginMsg; loginMsg = "";
       setTimeout(() => $("in-user").focus(), 0);
-    }
-  });
+    });
+  })();
 })();
 </script>
 </body>
