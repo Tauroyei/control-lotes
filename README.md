@@ -21,10 +21,10 @@ Hay dos roles:
 
 ## Vistas
 
-- **Agregar**: registra un lote eligiendo la plaza de la lista, con el código del lote y la cantidad de cartones.
-- **Despachos**: marca uno o varios lotes como despachados o enviados, con su fecha.
-- **Enviados**: revisa los lotes despachados en un rango de fechas, con un indicador de cuántos lotes y cartones se enviaron por plaza.
-- **Pagos** (administrador): marca como pagados los lotes ya despachados, con la fecha de pago.
+- **Agregar**: registra un lote eligiendo la plaza de la lista, con el código del lote y la cantidad de boletería (cartones).
+- **Despachos**: un menú desplegable muestra los lotes agregados que faltan por despachar; se marcan uno o varios con casillas y se despachan con su fecha.
+- **Enviados**: muestra todos los lotes despachados desde que se empezó a usar la app, ordenados por código de lote. Se puede elegir un rango de fechas, y hay un indicador de cuántos lotes y cartones se enviaron por plaza.
+- **Pagos** (administrador): un menú desplegable muestra los lotes despachados pendientes por pagar; al elegir uno se escribe cuánto pagaron (en quetzales) y la fecha. Abajo está el registro de lotes pagados: se pueden seleccionar varios y la app suma el total pagado. Desde el registro también se pone o cambia el monto de un lote, o se deshace el pago.
 - **Plazas** (administrador): crea, renombra y elimina plazas. Al renombrar una plaza también se actualizan sus lotes.
 - **Usuarios** (administrador): ver arriba.
 
@@ -53,6 +53,7 @@ El inicio de sesión usa **Firebase Authentication** (correo y contraseña; el u
 | `fechaDespacho` | texto `aaaa-mm-dd` o vacío | `2026-10-28` |
 | `pagado` | sí/no | `false` |
 | `fechaPago` | texto `aaaa-mm-dd` o vacío | `null` |
+| `monto` | número en quetzales (opcional) | `1500.5` |
 | `creadoPor` | texto (opcional) | `ana` |
 
 ## Seguridad

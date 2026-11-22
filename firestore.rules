@@ -87,7 +87,7 @@ service cloud.firestore {
   }
 
   function loteValido(d) {
-    return d.keys().hasOnly(['plaza', 'codigo', 'cartones', 'fechaRegistro', 'despachado', 'fechaDespacho', 'pagado', 'fechaPago', 'creadoPor'])
+    return d.keys().hasOnly(['plaza', 'codigo', 'cartones', 'fechaRegistro', 'despachado', 'fechaDespacho', 'pagado', 'fechaPago', 'monto', 'creadoPor'])
       && d.plaza is string && d.plaza.size() > 0 && d.plaza.size() <= 120
       && d.codigo is string && d.codigo.size() > 0 && d.codigo.size() <= 120
       && d.cartones is int && d.cartones > 0 && d.cartones <= 10000000
@@ -95,6 +95,8 @@ service cloud.firestore {
       && d.despachado is bool && d.pagado is bool
       && (d.fechaDespacho == null || (d.fechaDespacho is string && d.fechaDespacho.size() <= 10))
       && (d.fechaPago == null || (d.fechaPago is string && d.fechaPago.size() <= 10))
+      // Monto en quetzales que pagaron por el lote (los lotes viejos no lo tienen).
+      && (!('monto' in d) || d.monto == null || (d.monto is number && d.monto > 0 && d.monto <= 1000000000))
       && (!('creadoPor' in d) || (d.creadoPor is string && d.creadoPor.size() <= 120));
   }
 }

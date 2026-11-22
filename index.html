@@ -147,6 +147,20 @@ label.row { cursor: pointer; }
 .actionbar .btn { flex: 1 1 220px; }
 .hint { font-size: .8rem; color: var(--muted); }
 
+/* menú desplegable con casillas (Despachos) */
+.picker { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.picker summary { list-style: none; cursor: pointer; padding: 10px 36px 10px 12px; position: relative; font-weight: 600; }
+.picker summary::-webkit-details-marker { display: none; }
+.picker summary::after { content: ""; position: absolute; right: 14px; top: 50%; width: 8px; height: 8px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: translateY(-70%) rotate(45deg); }
+.picker[open] summary::after { transform: translateY(-30%) rotate(-135deg); }
+.picker[open] summary { border-bottom: 1px solid var(--line); }
+.picker-body { display: grid; gap: 6px; padding: 10px 12px; max-height: 380px; overflow-y: auto; }
+/* pagos */
+.monto { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--st-pag-fg); }
+.sumbar { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; padding: 12px 14px; border-radius: 10px; background: var(--st-pag-bg); color: var(--st-pag-fg); }
+.sumbar b { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.row-actions input.in-monto { width: 130px; }
+
 /* ---------- enviados ---------- */
 .range { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
 .range .field { flex: 1 1 150px; }
@@ -324,7 +338,7 @@ label.row { cursor: pointer; }
         <label class="field"><span>Código del lote</span>
           <input id="in-codigo" autocomplete="off" placeholder="Ej: L-2041" required>
         </label>
-        <label class="field"><span>Cartones</span>
+        <label class="field"><span>Boletería (cartones)</span>
           <input id="in-cartones" type="number" inputmode="numeric" min="1" step="1" placeholder="0" required>
         </label>
       </div>
@@ -344,11 +358,14 @@ label.row { cursor: pointer; }
   <!-- DESPACHOS -->
   <section class="view" id="v-despachos" role="tabpanel" aria-labelledby="tab-despachos" hidden>
     <div class="card">
-      <div class="card-head">
-        <h2>Por despachar</h2>
-        <label class="selall"><input type="checkbox" id="all-desp"> Seleccionar todos</label>
-      </div>
-      <ul class="list" id="list-pdesp"></ul>
+      <div class="card-head"><h2>Despachar lotes</h2><span class="hint" id="hint-desp"></span></div>
+      <details class="picker" id="pick-desp">
+        <summary><span id="pick-desp-txt">Selecciona los lotes a despachar</span></summary>
+        <div class="picker-body">
+          <label class="selall"><input type="checkbox" id="all-desp"> Seleccionar todos</label>
+          <ul class="list" id="list-pdesp"></ul>
+        </div>
+      </details>
       <div class="actionbar">
         <label class="field"><span>Fecha de despacho</span><input type="date" id="d-desp"></label>
         <button class="btn primary" id="btn-desp" disabled>Marcar como despachado</button>
@@ -366,35 +383,42 @@ label.row { cursor: pointer; }
         <label class="field"><span>Hasta</span><input type="date" id="env-hasta"></label>
       </div>
       <div class="quick" aria-label="Rangos rápidos">
+        <button class="btn small" type="button" data-rango="todo">Desde el inicio</button>
         <button class="btn small" type="button" data-rango="mes">Este mes</button>
         <button class="btn small" type="button" data-rango="mes-ant">Mes anterior</button>
         <button class="btn small" type="button" data-rango="7">Últimos 7 días</button>
-        <button class="btn small" type="button" data-rango="todo">Todo</button>
       </div>
       <div class="ind-grid" id="env-ind"></div>
     </div>
     <div class="card">
-      <div class="card-head"><h2>Enviados en el rango</h2><span class="hint">Más recientes primero</span></div>
+      <div class="card-head"><h2>Lotes enviados</h2><span class="hint">Ordenados por código de lote</span></div>
       <ul class="list" id="list-env"></ul>
     </div>
   </section>
 
   <!-- PAGOS (admin) -->
   <section class="view" id="v-pagos" role="tabpanel" aria-labelledby="tab-pagos" hidden>
+    <form class="card" id="form-pago" novalidate>
+      <div class="card-head"><h2>Registrar pago</h2><span class="hint" id="hint-ppago"></span></div>
+      <label class="field"><span>Lote pendiente por pagar</span>
+        <select id="sel-pago"><option value="">Selecciona el lote</option></select>
+      </label>
+      <p class="hint" id="pago-info" hidden></p>
+      <div class="actionbar">
+        <label class="field"><span>Monto pagado (Q)</span><input type="number" id="in-monto" inputmode="decimal" min="0.01" step="0.01" placeholder="0.00"></label>
+        <label class="field"><span>Fecha de pago</span><input type="date" id="d-pago"></label>
+        <button class="btn primary" type="submit" id="btn-pago" disabled>Registrar pago</button>
+      </div>
+      <span class="err" id="pago-err" role="alert"></span>
+    </form>
     <div class="card">
       <div class="card-head">
-        <h2>Pendientes de pago</h2>
-        <label class="selall"><input type="checkbox" id="all-pago"> Seleccionar todos</label>
+        <h2>Registro de lotes pagados</h2>
+        <label class="selall"><input type="checkbox" id="all-pag"> Seleccionar todos</label>
       </div>
-      <ul class="list" id="list-ppago"></ul>
-      <div class="actionbar">
-        <label class="field"><span>Fecha de pago</span><input type="date" id="d-pago"></label>
-        <button class="btn primary" id="btn-pago" disabled>Marcar como pagado</button>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-head"><h2>Pagados</h2><span class="hint">Más recientes primero</span></div>
+      <p class="hint" id="hint-pag"></p>
       <ul class="list" id="list-pag"></ul>
+      <div class="sumbar" id="sum-pag" aria-live="polite"></div>
     </div>
   </section>
 
@@ -473,7 +497,7 @@ label.row { cursor: pointer; }
     user: null, userName: "", admin: false,
     lotes: [], plazas: [], usuarios: [], ready: false, view: "agregar",
     plaza: "", q: "",
-    selDesp: new Set(), selPago: new Set(),
+    selDesp: new Set(), selPag: new Set(), montoEdit: null, montoDraft: "",
     editId: null, confirmDel: null, busy: false,
     plazaEdit: null, plazaDel: null,
     envDesde: "", envHasta: "",
@@ -484,7 +508,7 @@ label.row { cursor: pointer; }
 
   // ---------- helpers ----------
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const num = (n) => Number(n || 0).toLocaleString("es-CO");
+  const num = (n) => Number(n || 0).toLocaleString("es-GT");
   const cart = (n) => num(n) + (Number(n) === 1 ? " cartón" : " cartones");
   const lotesTxt = (n) => num(n) + (Number(n) === 1 ? " lote" : " lotes");
   const iso = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
@@ -495,6 +519,17 @@ label.row { cursor: pointer; }
   const sum = (arr) => arr.reduce((a, l) => a + (Number(l.cartones) || 0), 0);
   const byDesc = (k) => (a, b) => String(b[k] || "").localeCompare(String(a[k] || "")) || String(b.fechaRegistro || "").localeCompare(String(a.fechaRegistro || ""));
   const byName = (a, b) => a.localeCompare(b, "es");
+  const byCodigo = (a, b) => String(a.codigo || "").localeCompare(String(b.codigo || ""), "es", { numeric: true, sensitivity: "base" });
+  const hasMonto = (l) => typeof l.monto === "number";
+  const money = (n) => "Q " + Number(n || 0).toLocaleString("es-GT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const sumMonto = (arr) => Math.round(arr.reduce((a, l) => a + (hasMonto(l) ? l.monto : 0), 0) * 100) / 100;
+  // Acepta "1250", "1,250.50" o "1250,50"; devuelve null si no es un monto válido.
+  const parseMonto = (v) => {
+    let s = String(v ?? "").trim().replace(/\s|Q/gi, "");
+    if (/,\d{1,2}$/.test(s) && !s.includes(".")) s = s.replace(",", "."); else s = s.replace(/,/g, "");
+    const n = Number(s);
+    return s && isFinite(n) && n > 0 && n <= 1e9 ? Math.round(n * 100) / 100 : null;
+  };
 
   let toastTimer;
   function toast(msg) {
@@ -595,30 +630,65 @@ label.row { cursor: pointer; }
       return { meta, actions };
     }, wait || (filtered ? "Ningún lote coincide con el filtro." : "Aún no hay lotes. Agrega el primero con el formulario de arriba."));
 
-    // Despachos
-    fill("list-pdesp", reg.slice().sort(byDesc("fechaRegistro")), (l) => ({
+    // Despachos: menú desplegable con los lotes agregados que faltan por despachar
+    $("hint-desp").textContent = state.ready ? `${lotesTxt(reg.length)} por despachar` : "";
+    fill("list-pdesp", reg.slice().sort(byCodigo), (l) => ({
       check: "desp", selSet: state.selDesp,
       meta: l.fechaRegistro ? `<span>Registrado ${fdate(l.fechaRegistro)}</span>` : "",
     }), wait || (filtered ? "Ningún lote por despachar con este filtro." : "No hay lotes por despachar."));
+    syncSel("desp", reg, state.selDesp);
 
     renderEnviados(vis, wait);
 
-    // Pagos
     if (state.admin) {
-      fill("list-ppago", des.slice().sort(byDesc("fechaDespacho")), (l) => ({
-        check: "pago", selSet: state.selPago,
-        meta: `<span>Despachado ${fdate(l.fechaDespacho)}</span>`,
-      }), wait || (reg.length ? "No hay lotes pendientes de pago. Primero márcalos como despachados." : "No hay lotes pendientes de pago."));
-      fill("list-pag", pag.slice().sort(byDesc("fechaPago")), (l) => ({
-        meta: `<span>Pagado ${fdate(l.fechaPago)}</span><span>Despachado ${fdate(l.fechaDespacho)}</span>`,
-        actions: `<button class="btn small" data-act="undo-pago" data-id="${esc(l.id)}">Deshacer</button>`,
-      }), wait || "Todavía no hay lotes pagados.");
+      renderPagos(des, pag, wait);
       renderPlazas();
       renderUsuarios();
     }
+  }
 
-    syncSel("desp", reg, state.selDesp);
-    syncSel("pago", des, state.selPago);
+  // ---------- Pagos (admin) ----------
+  function renderPagos(des, pag, wait) {
+    // Menú con los lotes despachados que faltan por pagar
+    const sel = $("sel-pago");
+    const current = sel.value;
+    const pend = des.slice().sort(byCodigo);
+    $("hint-ppago").textContent = state.ready ? `${lotesTxt(pend.length)} pendientes` : "";
+    sel.innerHTML = `<option value="">${wait ? "Cargando lotes…" : pend.length ? "Selecciona el lote" : "No hay lotes pendientes por pagar"}</option>` +
+      pend.map((l) => `<option value="${esc(l.id)}">${esc(l.codigo)} · ${esc(l.plaza)} · ${cart(l.cartones)}</option>`).join("");
+    sel.value = pend.some((l) => l.id === current) ? current : "";
+    const l = pend.find((x) => x.id === sel.value);
+    $("pago-info").hidden = !l;
+    if (l) $("pago-info").textContent = `Plaza ${l.plaza} · ${cart(l.cartones)} · despachado el ${fdate(l.fechaDespacho)}`;
+    $("btn-pago").disabled = !l || state.busy;
+
+    // Registro de pagados, con selección para sumar
+    const lista = pag.slice().sort(byDesc("fechaPago"));
+    const sinMonto = lista.filter((x) => !hasMonto(x)).length;
+    $("hint-pag").textContent = state.ready && lista.length
+      ? `${lotesTxt(lista.length)} pagados · ${money(sumMonto(lista))} en total` + (sinMonto ? ` · ${sinMonto} sin monto registrado` : "")
+      : "";
+    fill("list-pag", lista, (x) => {
+      let actions;
+      if (state.montoEdit === x.id) {
+        actions = `<input class="in-monto" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="Monto Q" data-monto="${esc(x.id)}" value="${esc(state.montoDraft)}">
+          <button class="btn small primary" data-act="monto-ok" data-id="${esc(x.id)}">Guardar</button>
+          <button class="btn small" data-act="monto-no">Cancelar</button>`;
+      } else {
+        actions = `<button class="btn small" data-act="monto" data-id="${esc(x.id)}">${hasMonto(x) ? "Cambiar monto" : "Poner monto"}</button>
+          <button class="btn small" data-act="undo-pago" data-id="${esc(x.id)}">Deshacer pago</button>`;
+      }
+      const montoTxt = hasMonto(x) ? `<span class="monto">${money(x.monto)}</span>` : `<span class="chip reg">Sin monto</span>`;
+      return { check: "pag", selSet: state.selPag, meta: montoTxt + `<span>Pagado ${fdate(x.fechaPago)}</span>`, actions };
+    }, wait || "Todavía no hay lotes pagados.");
+    syncSel("pag", lista, state.selPag);
+
+    const elegidos = lista.filter((x) => state.selPag.has(x.id));
+    const faltan = elegidos.filter((x) => !hasMonto(x)).length;
+    $("sum-pag").hidden = !lista.length;
+    $("sum-pag").innerHTML = elegidos.length
+      ? `<span>${lotesTxt(elegidos.length)} seleccionados · ${cart(sum(elegidos))}${faltan ? ` · ${faltan} sin monto` : ""}</span><b>${money(sumMonto(elegidos))}</b>`
+      : `<span>Selecciona lotes del registro para sumar lo que pagaron.</span><b>${money(0)}</b>`;
   }
 
   function renderFormPlazas() {
@@ -665,7 +735,7 @@ label.row { cursor: pointer; }
       : enRango.length ? card(state.plaza ? state.plaza : "Total enviados", tot, true) + (state.plaza ? "" : filas.map(([n, p]) => card(n, p, false)).join(""))
       : `<p class="empty" style="grid-column: 1 / -1">No hay lotes enviados en este rango.</p>`;
 
-    fill("list-env", enRango.sort(byDesc("fechaDespacho")), (l) => ({
+    fill("list-env", enRango.sort(byCodigo), (l) => ({
       meta: `<span>Despachado ${fdate(l.fechaDespacho)}</span>` + chip(l),
       actions: l.pagado ? "" : `<button class="btn small" data-act="undo-desp" data-id="${esc(l.id)}">Deshacer despacho</button>`,
     }), wait || "No hay lotes enviados en este rango.");
@@ -894,6 +964,12 @@ label.row { cursor: pointer; }
   });
 
   // ---------- selección ----------
+  // "desp": lotes por despachar · "pag": registro de pagados (para sumar montos)
+  const selSet = (kind) => (kind === "desp" ? state.selDesp : state.selPag);
+  const selList = (kind) => {
+    const vis = state.lotes.filter(matches);
+    return kind === "desp" ? vis.filter((l) => !l.despachado && !l.pagado) : vis.filter((l) => l.pagado);
+  };
   function syncSel(kind, list, set) {
     const ids = new Set(list.map((l) => l.id));
     [...set].forEach((id) => { if (!ids.has(id)) set.delete(id); });
@@ -901,55 +977,78 @@ label.row { cursor: pointer; }
     all.checked = list.length > 0 && set.size === list.length;
     all.indeterminate = set.size > 0 && set.size < list.length;
     all.disabled = list.length === 0;
-    const btn = $("btn-" + kind);
+    if (kind !== "desp") return;
     const n = set.size;
-    const base = kind === "desp" ? "Marcar como despachado" : "Marcar como pagado";
     const c = sum(list.filter((l) => set.has(l.id)));
-    btn.textContent = n ? `${base} (${n} · ${cart(c)})` : base;
-    btn.disabled = !n || !colLotes || state.busy;
+    $("pick-desp-txt").textContent = n ? `${lotesTxt(n)} ${n === 1 ? "seleccionado" : "seleccionados"} · ${cart(c)}` : "Selecciona los lotes a despachar";
+    $("btn-desp").textContent = n ? `Marcar como despachado (${n})` : "Marcar como despachado";
+    $("btn-desp").disabled = !n || !colLotes || state.busy;
   }
   $("f-plaza").addEventListener("change", (e) => { state.plaza = e.target.value; render(); });
   $("f-buscar").addEventListener("input", (e) => { state.q = norm(e.target.value); render(); });
   document.addEventListener("change", (e) => {
     const t = e.target;
     if (t.dataset && t.dataset.sel) {
-      const set = t.dataset.sel === "desp" ? state.selDesp : state.selPago;
+      const set = selSet(t.dataset.sel);
       t.checked ? set.add(t.dataset.id) : set.delete(t.dataset.id);
       render();
     }
   });
   function selectAll(kind, checked) {
-    const vis = state.lotes.filter(matches);
-    const list = kind === "desp" ? vis.filter((l) => !l.despachado && !l.pagado) : vis.filter((l) => l.despachado && !l.pagado);
-    const set = kind === "desp" ? state.selDesp : state.selPago;
-    set.clear(); if (checked) list.forEach((l) => set.add(l.id));
+    const set = selSet(kind);
+    set.clear(); if (checked) selList(kind).forEach((l) => set.add(l.id));
     render();
   }
   $("all-desp").addEventListener("change", (e) => selectAll("desp", e.target.checked));
-  $("all-pago").addEventListener("change", (e) => selectAll("pago", e.target.checked));
+  $("all-pag").addEventListener("change", (e) => selectAll("pag", e.target.checked));
 
-  // ---------- acciones en grupo ----------
-  async function bulk(kind) {
+  // ---------- despachar en grupo ----------
+  $("btn-desp").addEventListener("click", async () => {
     if (!colLotes || state.busy) return;
-    const set = kind === "desp" ? state.selDesp : state.selPago;
-    const ids = [...set];
-    const date = $(kind === "desp" ? "d-desp" : "d-pago").value || today();
+    const ids = [...state.selDesp];
+    const date = $("d-desp").value || today();
     if (!ids.length) return;
-    const patch = kind === "desp" ? { despachado: true, fechaDespacho: date } : { pagado: true, fechaPago: date };
     state.busy = true; render();
     try {
       for (let i = 0; i < ids.length; i += 400) {
         const batch = fs.batch();
-        ids.slice(i, i + 400).forEach((id) => batch.update(colLotes.doc(id), patch));
+        ids.slice(i, i + 400).forEach((id) => batch.update(colLotes.doc(id), { despachado: true, fechaDespacho: date }));
         await batch.commit();
       }
-      set.clear();
-      toast(`${lotesTxt(ids.length)} ${ids.length === 1 ? "marcado" : "marcados"} como ${kind === "desp" ? "despachado" : "pagado"}`);
+      state.selDesp.clear();
+      $("pick-desp").open = false;
+      toast(`${lotesTxt(ids.length)} ${ids.length === 1 ? "marcado" : "marcados"} como despachado`);
     } catch (e) { writeError(e); }
     state.busy = false; render();
-  }
-  $("btn-desp").addEventListener("click", () => bulk("desp"));
-  $("btn-pago").addEventListener("click", () => bulk("pago"));
+  });
+
+  // ---------- registrar un pago ----------
+  $("sel-pago").addEventListener("change", () => { $("pago-err").textContent = ""; render(); if ($("sel-pago").value) $("in-monto").focus(); });
+  $("form-pago").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!colLotes || state.busy) return;
+    const err = $("pago-err");
+    const l = state.lotes.find((x) => x.id === $("sel-pago").value && x.despachado && !x.pagado);
+    const monto = parseMonto($("in-monto").value);
+    if (!l) { err.textContent = "Selecciona el lote que te pagaron."; return $("sel-pago").focus(); }
+    if (monto === null) { err.textContent = "Escribe cuánto te pagaron por este lote (mayor que 0)."; return $("in-monto").focus(); }
+    err.textContent = "";
+    state.busy = true; render();
+    try {
+      await colLotes.doc(l.id).update({ pagado: true, fechaPago: $("d-pago").value || today(), monto });
+      $("sel-pago").value = ""; $("in-monto").value = "";
+      toast(`Lote ${l.codigo} pagado: ${money(monto)}`);
+    } catch (ex) { writeError(ex); }
+    state.busy = false; render();
+  });
+  // borrador del monto que se está editando en el registro (sobrevive a los re-render)
+  document.addEventListener("input", (e) => { if (e.target.dataset && e.target.dataset.monto) state.montoDraft = e.target.value; });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && e.target.dataset && e.target.dataset.monto) {
+      e.preventDefault();
+      document.querySelector(`[data-act="monto-ok"][data-id="${CSS.escape(e.target.dataset.monto)}"]`)?.click();
+    }
+  });
 
   // ---------- acciones por fila ----------
   document.addEventListener("click", async (e) => {
@@ -961,6 +1060,14 @@ label.row { cursor: pointer; }
     if (act === "edit") return startEdit(id);
     if (act === "del") { state.confirmDel = id; return render(); }
     if (act === "del-no") { state.confirmDel = null; return render(); }
+    if (act === "monto") {
+      const l = state.lotes.find((x) => x.id === id);
+      state.montoEdit = id; state.montoDraft = l && hasMonto(l) ? String(l.monto) : "";
+      render();
+      const inp = document.querySelector(`[data-monto="${CSS.escape(id)}"]`); if (inp) inp.focus();
+      return;
+    }
+    if (act === "monto-no") { state.montoEdit = null; return render(); }
     if (!colLotes) return;
     try {
       if (act === "del-yes") {
@@ -970,7 +1077,14 @@ label.row { cursor: pointer; }
       } else if (act === "undo-desp") {
         await colLotes.doc(id).update({ despachado: false, fechaDespacho: null }); toast("Despacho deshecho");
       } else if (act === "undo-pago") {
-        await colLotes.doc(id).update({ pagado: false, fechaPago: null }); toast("Pago deshecho");
+        const l = state.lotes.find((x) => x.id === id);
+        if (!confirm(`¿Deshacer el pago del lote ${l ? l.codigo : ""}? Se borrará el monto registrado.`)) return;
+        await colLotes.doc(id).update({ pagado: false, fechaPago: null, monto: null }); toast("Pago deshecho");
+      } else if (act === "monto-ok") {
+        const monto = parseMonto(state.montoDraft);
+        if (monto === null) { toast("Escribe un monto mayor que 0."); return; }
+        await colLotes.doc(id).update({ monto });
+        state.montoEdit = null; toast(`Monto guardado: ${money(monto)}`);
       }
     } catch (err) { writeError(err); }
     render();
@@ -1042,24 +1156,25 @@ label.row { cursor: pointer; }
     if (typeof XLSX === "undefined") return toast("No se pudo cargar la herramienta de Excel. Revisa tu conexión y recarga la página.");
     const vis = state.lotes.filter(matches).sort((a, b) => byName(a.plaza, b.plaza) || String(a.fechaRegistro || "").localeCompare(String(b.fechaRegistro || "")));
     if (!vis.length) return toast("No hay lotes para descargar con estos filtros.");
-    const lotes = [["Plaza", "Código del lote", "Cartones", "Estado", "Fecha de registro", "Fecha de despacho", "Fecha de pago", "Registrado por"]]
-      .concat(vis.map((l) => [l.plaza, l.codigo, Number(l.cartones) || 0, ESTADO[stage(l)], fdate(l.fechaRegistro), fdate(l.fechaDespacho), fdate(l.fechaPago), l.creadoPor || ""]));
+    const lotes = [["Plaza", "Código del lote", "Cartones", "Estado", "Fecha de registro", "Fecha de despacho", "Fecha de pago", "Monto pagado (Q)", "Registrado por"]]
+      .concat(vis.map((l) => [l.plaza, l.codigo, Number(l.cartones) || 0, ESTADO[stage(l)], fdate(l.fechaRegistro), fdate(l.fechaDespacho), fdate(l.fechaPago), l.pagado && hasMonto(l) ? l.monto : "", l.creadoPor || ""]));
     const res = new Map();
     vis.forEach((l) => {
-      const r = res.get(l.plaza) || { lotes: 0, cartones: 0, reg: 0, regC: 0, des: 0, desC: 0, pag: 0, pagC: 0 };
+      const r = res.get(l.plaza) || { lotes: 0, cartones: 0, reg: 0, regC: 0, des: 0, desC: 0, pag: 0, pagC: 0, monto: 0 };
       const c = Number(l.cartones) || 0, s = stage(l);
       r.lotes++; r.cartones += c; r[s]++; r[s + "C"] += c;
+      if (l.pagado && hasMonto(l)) r.monto = Math.round((r.monto + l.monto) * 100) / 100;
       res.set(l.plaza, r);
     });
-    const head = ["Plaza", "Total lotes", "Total cartones", "Sin despachar (lotes)", "Sin despachar (cartones)", "Despachados sin pago (lotes)", "Despachados sin pago (cartones)", "Pagados (lotes)", "Pagados (cartones)"];
-    const rows = [...res.entries()].sort((a, b) => byName(a[0], b[0])).map(([p, r]) => [p, r.lotes, r.cartones, r.reg, r.regC, r.des, r.desC, r.pag, r.pagC]);
-    const total = rows.reduce((t, r) => t.map((v, i) => (i === 0 ? "TOTAL" : v + r[i])), ["TOTAL", 0, 0, 0, 0, 0, 0, 0, 0]);
+    const head = ["Plaza", "Total lotes", "Total cartones", "Sin despachar (lotes)", "Sin despachar (cartones)", "Despachados sin pago (lotes)", "Despachados sin pago (cartones)", "Pagados (lotes)", "Pagados (cartones)", "Total pagado (Q)"];
+    const rows = [...res.entries()].sort((a, b) => byName(a[0], b[0])).map(([p, r]) => [p, r.lotes, r.cartones, r.reg, r.regC, r.des, r.desC, r.pag, r.pagC, r.monto]);
+    const total = rows.reduce((t, r) => t.map((v, i) => (i === 0 ? "TOTAL" : Math.round((v + r[i]) * 100) / 100)), ["TOTAL", 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     const wb = XLSX.utils.book_new();
     const ws1 = XLSX.utils.aoa_to_sheet(lotes);
-    ws1["!cols"] = [28, 16, 11, 15, 16, 17, 14, 16].map((w) => ({ wch: w }));
+    ws1["!cols"] = [28, 16, 11, 15, 16, 17, 14, 16, 16].map((w) => ({ wch: w }));
     ws1["!autofilter"] = { ref: ws1["!ref"] };
     const ws2 = XLSX.utils.aoa_to_sheet([head, ...rows, total]);
-    ws2["!cols"] = [28, 11, 14, 14, 16, 18, 20, 12, 14].map((w) => ({ wch: w }));
+    ws2["!cols"] = [28, 11, 14, 14, 16, 18, 20, 12, 14, 16].map((w) => ({ wch: w }));
     XLSX.utils.book_append_sheet(wb, ws1, "Lotes");
     XLSX.utils.book_append_sheet(wb, ws2, "Resumen por plaza");
     const sufijo = state.plaza ? "-" + state.plaza.replace(/[^\p{L}\p{N}]+/gu, "-").toLowerCase() : "";
@@ -1199,7 +1314,7 @@ label.row { cursor: pointer; }
   // ---------- inicio ----------
   $("d-desp").value = today();
   $("d-pago").value = today();
-  setRango("mes");
+  setRango("todo");
 
   cfg = window.FIREBASE_CONFIG;
   if (typeof firebase === "undefined" || !cfg || !cfg.projectId || /PEGA/.test(cfg.apiKey || "")) {
@@ -1223,7 +1338,7 @@ label.row { cursor: pointer; }
       if (user) { startData(user); return; }
       stopData();
       state.user = null; state.lotes = []; state.plazas = []; state.usuarios = []; state.admin = false;
-      state.selDesp.clear(); state.selPago.clear(); resetForm(); togglePass(false);
+      state.selDesp.clear(); state.selPag.clear(); state.montoEdit = null; resetForm(); togglePass(false);
       if (!setupDone) { showScreen("setup"); setTimeout(() => $("su-user").focus(), 0); return; }
       showScreen("login");
       $("login-err").textContent = loginMsg; loginMsg = "";
